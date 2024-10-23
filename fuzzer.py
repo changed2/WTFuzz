@@ -3,6 +3,22 @@
 import os
 import subprocess
 import random
+import sys
+from magic import from_file
+
+def detect_input_format(file_path):
+    file_type = from_file(file_path)
+    if "CSV" in file_type:
+        print("CSV Detected")
+        return
+    elif "JSON" in file_type:
+        print("JSON Detected")
+        return
+    
+    print("Unknown type, plaintext selected")
+
+file_path = 'example_inputs/csv1.txt'
+detected_format = detect_input_format(file_path)
 
 def random_input(max_length: int = 100, char_start: int = 32, char_range: int = 32) -> str:
     out = ""
@@ -12,12 +28,20 @@ def random_input(max_length: int = 100, char_start: int = 32, char_range: int = 
     return out
 
 if __name__ == "__main__":
-    program = "binaries/challenge1"
+    if len(sys.argv) != 2:
+        print(f"Usage: {sys.argv[0]} [filename] [input_file]")
+        exit()
+        
+    program = sys.argv[1]
+    input_file = sys.argv[2]
     
-    with open("payload.txt", "w") as f:
+    # Detect the type of the sample input (JSON or CSV)
+    detect_input_format(input_file)
+
+    with open(input_file, "w") as f:
         f.write(random_input())
         
-    with open("payload.txt", "r") as input_file:
+    with open(input_file, "r") as input_file:
         process = subprocess.Popen([program], stdin=input_file, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output, errors = process.communicate()
         
@@ -32,13 +56,14 @@ TODO:
         1. Find the actual file input type
         2. Create appropriate payload
     - Different input mutation strategies (JSON and CSV for checkin)
+        - csv: large values in columns
+            - numbers: postive and negative
+            - remove random commas from csv 
     - Exploit detection
         - Buffer overflows (Large random strings)
         - Format strings   (% symbols with characters such as p, n, x, c, s)
     - Code coverage checker
 '''
-        
-
 
 '''
 Some hints if you are stuck on where to start.
