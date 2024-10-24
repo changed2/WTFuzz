@@ -37,8 +37,9 @@ if __name__ == "__main__":
     # print(f"PROGRAM OUTPUT: {output.decode().strip()}")
     
     if errors:
+        filename = os.path.basename(program)
         crash_log(process.returncode, errors.decode().strip(), 
-                  generated_input, output.decode().strip())
+                  generated_input, output.decode().strip(), filename)
 
 '''
 Tasks:
