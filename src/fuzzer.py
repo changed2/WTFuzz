@@ -4,7 +4,6 @@ import os
 import subprocess
 import random
 import sys
-from magic import from_file
 from harness import Harness
 from exploit_detection import crash_log
 
@@ -36,9 +35,10 @@ if __name__ == "__main__":
         process = subprocess.Popen([program], stdin=input_file, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output, errors = process.communicate()
         
+    print(f"PROGRAM OUTPUT: {output.decode().strip()}")
     
     if errors:
-        crash_log(process.returncode, errors.decode().strip(), generated_input)
+        crash_log(process.returncode, errors.decode().strip())
 
 '''
 Tasks:
