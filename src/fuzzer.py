@@ -22,9 +22,8 @@ if __name__ == "__main__":
     program = sys.argv[1]
     input_file = sys.argv[2]
     
-    # Detect the type of the sample input (JSON or CSV)
     harness_instance = Harness(input_file)  # Create an instance
-    print(harness_instance.strategy)  # Access the instance's strategy
+    # print(harness_instance.strategy)  # Access the instance's strategy
 
     generated_input = random_input()
     with open(input_file, "w") as f:
@@ -35,10 +34,11 @@ if __name__ == "__main__":
         process = subprocess.Popen([program], stdin=input_file, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output, errors = process.communicate()
         
-    print(f"PROGRAM OUTPUT: {output.decode().strip()}")
+    # print(f"PROGRAM OUTPUT: {output.decode().strip()}")
     
     if errors:
-        crash_log(process.returncode, errors.decode().strip())
+        crash_log(process.returncode, errors.decode().strip(), 
+                  generated_input, output.decode().strip())
 
 '''
 Tasks:
