@@ -59,12 +59,17 @@ def mutate(json_input: bytes):
     
     with open("json_input/mutated_input.txt", "w") as f:
         
+        '''i think the buffer overflow is just the first key'''
+        f.write(json.dumps({}) + "\n")
+        
         for key in list(json_obj.keys()):
             if key == "len":
-                buffer_overflow = cyclic(10024).decode()
-                mutated = obj.replace(key, buffer_overflow)
-                mutated2 = mutated.replace("len", len(buffer_overflow))
-                f.write(json.dumps(mutated2.properties) + "\n")
+                # difference greater than 30 between input length and length in json
+                mutated = obj.replace("len", 42)
+                f.write(json.dumps(mutated.properties) + "\n")
+                
+                mutated = obj.replace("len", -1)
+                f.write(json.dumps(mutated.properties) + "\n")
             
             if key == "input":
                 # buffer overflow case 
@@ -112,7 +117,7 @@ def mutate(json_input: bytes):
                 f.write(json.dumps(mutated.properties) + "\n")
                 
                 # large list case
-                large_array = ["element" + str(i) for i in range(10025)]
+                large_array = ["element" + str(i) for i in range(10024)]
                 json_obj_with_large_array = obj.replace("more_data", large_array)
                 f.write(json.dumps(json_obj_with_large_array.properties) + "\n")
 
