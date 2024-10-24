@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-#Initial Branch Commit
 
 import os
 import subprocess
@@ -7,6 +6,7 @@ import random
 import sys
 from magic import from_file
 from harness import Harness
+from exploit_detection import crash_log
 
 def random_input(max_length: int = 100, char_start: int = 32, char_range: int = 32) -> str:
     out = ""
@@ -24,21 +24,21 @@ if __name__ == "__main__":
     input_file = sys.argv[2]
     
     # Detect the type of the sample input (JSON or CSV)
-    Harness(input_file)
-    print(Harness.strategy)
+    harness_instance = Harness(input_file)  # Create an instance
+    print(harness_instance.strategy)  # Access the instance's strategy
 
+    generated_input = random_input()
     with open(input_file, "w") as f:
-        f.write(random_input())
+        f.write(generated_input)
         # TODO: file mutation strategy - Case/If statments
         
     with open(input_file, "r") as input_file:
         process = subprocess.Popen([program], stdin=input_file, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output, errors = process.communicate()
         
-    print(f"PROGRAM OUTPUT: {output.decode().strip()}")
     
     if errors:
-        print(f"PROGRAM ERRORS: {errors.decode().strip()}")
+        crash_log(process.returncode, errors.decode().strip(), generated_input)
 
 '''
 Tasks:
