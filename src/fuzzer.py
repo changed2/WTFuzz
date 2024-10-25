@@ -31,34 +31,3 @@ if __name__ == "__main__":
         case _:
             print(f"Unknown input file type: {harness.strategy}")
             exit(1)
-
-'''
-Tasks:
-    AKANKSHA
-    - CSV mutation 
-    
-    EDISON
-    - JSON mutation
-
-    Mutation types:
-        - Buffer overflow
-        - Random input
-        - No format strings?
-    
-    KOUSHIK
-    - Exploit detection summarisation (retrieve output from binary)
-        - Display what crashes occured, how it occured, why it occured
-        - Put into resulting file
-    
-    WAYNE
-    - Connecting everything
-    - Refactoring and Feature creation
-        - Splitting up to different files
-        - Condensing code into functions
-        - Classes etc
-        
-    Report Writing
-    
-    Future Features
-    - Code coverage checker
-'''
