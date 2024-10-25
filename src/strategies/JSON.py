@@ -43,8 +43,8 @@ class JsonObject:
         return self 
     
     
-def format_input():
-    with open("json_input/input.txt", "r") as f:
+def format_input(input_file):
+    with open(input_file, "r") as f:
         sample_input = f.read()
         return sample_input
 
@@ -66,9 +66,9 @@ def mutate(json_input: bytes):
     for key in list(json_obj.keys()):
         if key == "len":
             # difference greater than 30 between input length and length in json
-            mutated_inputs.append(json.dumps(obj.replace("len", 42).properties))
+            #mutated_inputs.append(json.dumps(obj.replace("len", 42).properties))
+            mutated_inputs.append(json.dumps(obj.replace("len", 500).properties))
             mutated_inputs.append(json.dumps(obj.replace("len", -1).properties))
-            mutated_inputs.append(json.dumps(obj.replace("len", -50).properties))
             mutated_inputs.append(json.dumps(obj.replace("len", None).properties))
         
         if key == "input":
@@ -117,38 +117,17 @@ def mutate(json_input: bytes):
             mutated_inputs.append(json.dumps(mutated.properties))
             
             # large list case
-            large_array = ["element" + str(i) for i in range(10024)]
+            large_array = ["element" + str(i) for i in range(124)]
             json_obj_with_large_array = obj.replace("more_data", large_array)
             mutated_inputs.append(json.dumps(json_obj_with_large_array.properties))
             
     return mutated_inputs
 
-def test_mutated_inputs(binary_path, mutated_inputs):
-# Iterate over each mutated input
-    for i, json_input in enumerate(mutated_inputs):
-        try:
-            # Execute the binary and pass the JSON input
-            result = subprocess.run(
-                [binary_path],  # Path to the binary
-                input=json_input,  # Pass the JSON input as bytes
-                capture_output=True,  # Capture stdout and stderr
-                text=True  # Return output as string instead of bytes
-            )
 
-            # Print the result of the execution
-            print(f"Test {i + 1}:")
-            #print(f"Input: {json_input.strip()}")
-            print(f"Output: {result.stdout.strip()}")
-            print(f"Error: {result.stderr.strip()}" if result.stderr else "No Errors")
-            print("-" * 50)
+def mutate_json(json_input_file, binary_file, harness):
+    sample_json = format_input(json_input_file)
+    mutated_input = mutate(sample_json)
 
-        except Exception as e:
-            print(f"Error during test {i + 1}: {e}")
-                
-if __name__ == "__main__":
-    sample_json = format_input()
-    mutated_inputs = mutate(sample_json)
-    
-    binary_path = "json_input/json1"
-    test_mutated_inputs(binary_path, mutated_inputs)
-
+    for i in mutated_input:
+        fuzzed_data = ''.join(i)
+        harness.run_retrieve(binary_file, fuzzed_data)

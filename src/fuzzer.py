@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
-import os
-import subprocess
 import random
 import sys
 from harness import Harness
 from exploit_detection import crash_log
+from strategies.CSV import *
+from strategies.JSON import *
 
 def random_input(max_length: int = 100, char_start: int = 32, char_range: int = 32) -> str:
     out = ""
@@ -19,27 +19,18 @@ if __name__ == "__main__":
         print(f"Usage: {sys.argv[0]} <filename> <input_file>")
         exit(1)
         
-    program = sys.argv[1]
+    binary = sys.argv[1]
     input_file = sys.argv[2]
     
-    harness_instance = Harness(input_file)  # Create an instance
-    # print(harness_instance.strategy)  # Access the instance's strategy
-
-    generated_input = random_input()
-    with open(input_file, "w") as f:
-        f.write(generated_input)
-        # TODO: file mutation strategy - Case/If statments
-        
-    with open(input_file, "r") as input_file:
-        process = subprocess.Popen([program], stdin=input_file, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        output, errors = process.communicate()
-        
-    # print(f"PROGRAM OUTPUT: {output.decode().strip()}")
-    
-    if errors:
-        filename = os.path.basename(program)
-        crash_log(process.returncode, errors.decode().strip(), 
-                  generated_input, output.decode().strip(), filename)
+    harness = Harness(input_file)  # Create an instance
+    match harness.strategy:
+        case "CSV":
+            mutate_csv(input_file, binary, harness)
+        case "JSON":
+            mutate_json(input_file, binary, harness)
+        case _:
+            print(f"Unknown input file type: {harness.strategy}")
+            exit(1)
 
 '''
 Tasks:

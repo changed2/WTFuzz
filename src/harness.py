@@ -1,4 +1,7 @@
 from magic import from_file
+import subprocess
+from exploit_detection import crash_log
+import os
 
 class Harness():
     strategy = None
@@ -14,3 +17,12 @@ class Harness():
         else:
             print("No matching strategy found, defaulting to plaintext")
             self.strategy = "TEXT"
+            
+    def run_retrieve(self, binary, input):        
+        process = subprocess.Popen([binary], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output, errors = process.communicate(input=input.encode())
+        
+        if errors:
+            filename = os.path.basename(binary)
+            crash_log(process.returncode, errors.decode().strip(), 
+                    input, output.decode().strip(), filename)
