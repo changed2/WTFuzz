@@ -1,4 +1,5 @@
-env
+venv
 myenv
 src/__pycache__
+src/strategies/__pycache__/
 example_inputs/challenge1.txt

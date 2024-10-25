@@ -1,10 +1,6 @@
-# Start from a default ubuntu image.
-FROM ubuntu:22.04
+FROM python:3.11-slim
 
-# Copy/Compile my fuzzer
-COPY fuzzer /
-RUN chmod +x /fuzzer
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Run it.
-CMD ["/bin/bash", "/fuzzer"]
-
+CMD ["python3", "fuzzer.py"]
