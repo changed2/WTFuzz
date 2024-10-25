@@ -57,76 +57,73 @@ def mutate(json_input: bytes):
     
     obj = JsonObject(json_obj)
     
-    with open("json_input/mutated_input.txt", "w") as f:
+    mutated_inputs = []
+    
+    '''i think the buffer overflow is just the first key'''
+    mutated_inputs.append(json.dumps({}))
+    
+    
+    for key in list(json_obj.keys()):
+        if key == "len":
+            # difference greater than 30 between input length and length in json
+            mutated_inputs.append(json.dumps(obj.replace("len", 42).properties))
+            mutated_inputs.append(json.dumps(obj.replace("len", -1).properties))
+            mutated_inputs.append(json.dumps(obj.replace("len", -50).properties))
+            mutated_inputs.append(json.dumps(obj.replace("len", None).properties))
         
-        '''i think the buffer overflow is just the first key'''
-        f.write(json.dumps({}) + "\n")
-        
-        for key in list(json_obj.keys()):
-            if key == "len":
-                # difference greater than 30 between input length and length in json
-                mutated = obj.replace("len", 42)
-                f.write(json.dumps(mutated.properties) + "\n")
-                
-                mutated = obj.replace("len", -1)
-                f.write(json.dumps(mutated.properties) + "\n")
+        if key == "input":
+            # buffer overflow case 
+            buffer_overflow = cyclic(10024).decode()
+            mutated = obj.replace(key, buffer_overflow)
+            mutated2 = mutated.replace("len", len(buffer_overflow))
+            mutated_inputs.append(json.dumps(mutated2.properties))
+
+            # null case
+            mutated = obj.replace(key, None)
+            mutated2 = mutated.replace("len", 0)
+            mutated_inputs.append(json.dumps(mutated2.properties))
             
-            if key == "input":
-                # buffer overflow case 
-                buffer_overflow = cyclic(10024).decode()
-                mutated = obj.replace(key, buffer_overflow)
-                mutated2 = mutated.replace("len", len(buffer_overflow))
-                f.write(json.dumps(mutated2.properties) + "\n")
-    
-                # null case
-                mutated = obj.replace(key, None)
-                mutated2 = mutated.replace("len", 0)
-                f.write(json.dumps(mutated2.properties) + "\n")
-                
-                # remove key case
-                mutated = obj.remove(key)
-                mutated2 = mutated.replace("len", 0)
-                f.write(json.dumps(mutated2.properties) + "\n")
-    
-                # binary data case
-                binary_string = b'\xFF\x00'.hex()
-                mutated = obj.replace(key, binary_string)
-                mutated2 = mutated.replace("len", len(binary_string))
-                f.write(json.dumps(mutated2.properties) + "\n")
+            # remove key case
+            mutated = obj.remove(key)
+            mutated2 = mutated.replace("len", 0)
+            mutated_inputs.append(json.dumps(mutated2.properties))
 
-            if key == "more_data" and isinstance(json_obj["more_data"], list):
-                # empty array case
-                mutated = obj.replace(key, [])
-                f.write(json.dumps(mutated.properties) + "\n")
-                
-                # replace each value in array with null case
-                for i in range(len(json_obj["more_data"])):
-                    mutated_array_replace = obj.replace_in_array("more_data", i, None)
-                    f.write(json.dumps(mutated_array_replace.properties) + "\n")
-                
-                # null array case
-                mutated = obj.replace(key, None)
-                f.write(json.dumps(mutated.properties) + "\n")
-                
-                # append normal value to array case
-                mutated = obj.append_in_array("more_data", "aa")
-                f.write(json.dumps(mutated.properties) + "\n")
-                
-                # append null to array case
-                mutated = obj.append_in_array("more_data", None)
-                f.write(json.dumps(mutated.properties) + "\n")
-                
-                # large list case
-                large_array = ["element" + str(i) for i in range(10024)]
-                json_obj_with_large_array = obj.replace("more_data", large_array)
-                f.write(json.dumps(json_obj_with_large_array.properties) + "\n")
+            # binary data case
+            binary_string = b'\xFF\x00'.hex()
+            mutated = obj.replace(key, binary_string)
+            mutated2 = mutated.replace("len", len(binary_string))
+            mutated_inputs.append(json.dumps(mutated2.properties))
 
+        if key == "more_data" and isinstance(json_obj["more_data"], list):
+            # empty array case
+            mutated = obj.replace(key, [])
+            mutated_inputs.append(json.dumps(mutated.properties))
+            
+            # replace each value in array with null case
+            for i in range(len(json_obj["more_data"])):
+                mutated_array_replace = obj.replace_in_array("more_data", i, None)
+                mutated_inputs.append(json.dumps(mutated_array_replace.properties))
+            
+            # null array case
+            mutated = obj.replace(key, None)
+            mutated_inputs.append(json.dumps(mutated.properties))
+            
+            # append normal value to array case
+            mutated = obj.append_in_array("more_data", "aa")
+            mutated_inputs.append(json.dumps(mutated.properties))
+            
+            # append null to array case
+            mutated = obj.append_in_array("more_data", None)
+            mutated_inputs.append(json.dumps(mutated.properties))
+            
+            # large list case
+            large_array = ["element" + str(i) for i in range(10024)]
+            json_obj_with_large_array = obj.replace("more_data", large_array)
+            mutated_inputs.append(json.dumps(json_obj_with_large_array.properties))
+            
+    return mutated_inputs
 
-def test_mutated_inputs(binary_path, mutated_file):
-# Read all the mutated inputs from the file
-    with open(mutated_file, "r") as f:
-        mutated_inputs = f.readlines()
-
+def test_mutated_inputs(binary_path, mutated_inputs):
 # Iterate over each mutated input
     for i, json_input in enumerate(mutated_inputs):
         try:
@@ -150,9 +147,8 @@ def test_mutated_inputs(binary_path, mutated_file):
                 
 if __name__ == "__main__":
     sample_json = format_input()
-    mutate(sample_json)
+    mutated_inputs = mutate(sample_json)
     
     binary_path = "json_input/json1"
-    mutated_file = "json_input/mutated_input.txt"
-    test_mutated_inputs(binary_path, mutated_file)
+    test_mutated_inputs(binary_path, mutated_inputs)
 
