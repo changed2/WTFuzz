@@ -1,1 +1,4 @@
 env
+myenv
+src/__pycache__
+example_inputs/challenge1.txt
