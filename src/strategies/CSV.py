@@ -13,3 +13,40 @@
 # Overflowing columns
 
 # Overflowing lines
+import csv
+import random
+# Read csv file contents
+def read_csv(input_file):
+    data = []
+    with open(input_file, mode = 'r') as input:
+        csv_reader = csv.reader(input)
+        for row in csv_reader:
+            data.append(row)
+    return data
+
+# take csv, split by lines, split by commas
+def csv_to_list_of_list(csv_string):
+    lines = csv_string.split("\n")
+    list_of_list = [line.split(",") for line in lines]
+    return list_of_list
+
+# MUTATION METHODS
+def append_characters(list, mutation_count = 10):
+    # size of csv data
+    num_rows = len(list)
+    # first list represents no of items in column
+    num_cols = len(list[0])
+
+    # repeate mutation 10 times
+    for _ in range(mutation_count):
+        # select random row
+        row = random.randint(0, num_rows - 1)
+        # select random col
+        col = random.randint(0, num_cols - 1)
+
+        # get item from randomly selected row and col
+        list[row][col] = str(list[row][col]) + 'random'
+
+    return list
+
+# Strategy 2: replace numbers with negatives
