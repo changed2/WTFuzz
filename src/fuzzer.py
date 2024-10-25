@@ -21,7 +21,7 @@ if __name__ == "__main__":
         print("Unable to find binaries directory")
         
     if not os.path.isdir("../example_inputs"):
-        print("Unable to find binaries directory")
+        print("Unable to find example_inputs directory")
         
     for binary in glob.glob("../binaries/*"):
         filename = os.path.basename(binary)
