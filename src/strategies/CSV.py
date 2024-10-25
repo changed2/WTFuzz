@@ -50,3 +50,15 @@ def append_characters(list, mutation_count = 10):
     return list
 
 # Strategy 2: replace numbers with negatives
+def replace_with_negatives(list, mutation_count=10):
+    num_rows = len(list)
+    num_cols = len(list[0])
+    for _ in range(mutation_count):
+        # get a random row and col
+        row = random.randint(0, num_rows - 1)
+        col = random.randint(0, num_cols - 1)
+        # check if value is numeric
+        if isinstance(list[row][col], (int, float)):
+            # replace
+            list[row][col] = -abs(list[row][col])
+    return list
