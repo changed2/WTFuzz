@@ -6,6 +6,8 @@ from harness import Harness
 from exploit_detection import crash_log
 from strategies.CSV import *
 from strategies.JSON import *
+import os 
+import glob
 
 def random_input(max_length: int = 100, char_start: int = 32, char_range: int = 32) -> str:
     out = ""
@@ -15,19 +17,21 @@ def random_input(max_length: int = 100, char_start: int = 32, char_range: int = 
     return out
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print(f"Usage: {sys.argv[0]} <filename> <input_file>")
-        exit(1)
+    if not os.path.isdir("../binaries"):
+        print("Unable to find binaries directory")
         
-    binary = sys.argv[1]
-    input_file = sys.argv[2]
-    
-    harness = Harness(input_file)  # Create an instance
-    match harness.strategy:
-        case "CSV":
-            mutate_csv(input_file, binary, harness)
-        case "JSON":
-            mutate_json(input_file, binary, harness)
-        case _:
-            print(f"Unknown input file type: {harness.strategy}")
-            exit(1)
+    if not os.path.isdir("../example_inputs"):
+        print("Unable to find binaries directory")
+        
+    for binary in glob.glob("../binaries/*"):
+        filename = os.path.basename(binary)
+        input_file = f"../example_inputs/{filename}.txt"
+        harness = Harness(input_file)  # Create an instance
+
+        match harness.strategy:
+            case "CSV":
+                mutate_csv(input_file, binary, harness)
+            case "JSON":
+                mutate_json(input_file, binary, harness)
+            case _:
+                print(f"Unknown input file type: {harness.strategy}")
