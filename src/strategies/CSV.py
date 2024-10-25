@@ -1,20 +1,9 @@
 #!/usr/bin/env python3
 
-# Format string vulnerabilities inside fields
-# Buffer overflow vulnerabilities inside fields
-# Bugs with missing or extra control characters
-# Bugs parsing non-printable or ascii characters
-# Bugs parsing large files
-# Integer overflows
-# Integer underflows
-
-#  In fuzz_csv.c, the fuzzer initially runs 4 payloads that attempt the same techniques without any randomisation. These include some buffer overflow and format string attacks as well as swapping some values with known problematic input such as swapping 1 with -1, -999999, 0 etc. These functions run the same checks for each invocation so there is no added value in running them a second time on a binary. After this set of functions are executed the fuzzer progresses into an infinite loop which mutates the input in random ways in random locations. The loop will exit when a crash occurs. Some techniques include bit shifts (bit_shift_in_range), bit flips (bit_flip_in_range), increasing the number of cells (fuzz_populate_width), increasing the number of rows (fuzz_populate_length) and creating numerous empty cells (fuzz_empty_cells). These strategies continue to execute with different outputs due to varying execution based on a pseudo random number generator rand().
-
-# Overflowing columns
-
-# Overflowing lines
 import csv
 import random
+from queue import Queue
+
 # Read csv file contents
 def read_csv(input_file):
     data = []
@@ -62,3 +51,34 @@ def replace_with_negatives(list, mutation_count=10):
             # replace
             list[row][col] = -abs(list[row][col])
     return list
+
+# Convert back to csv from list
+def list_to_csv(list):
+    csv_string = ""
+    for row in list:
+        row_string = [str(item) for item in row]
+        csv_row = ",".join(row_string)
+        csv_string += csv_row + "\n"
+    return csv_string
+
+# main function: csv fuzzer
+def mutate_csv(csv_data, fuzzed_data, binary_file, output_from_binary):
+    # Mutation strategies
+    csv_mutator = [append_characters, replace_with_negatives]
+    
+    # Convert binary data to lists
+    csv_data = csv_to_list_of_list(csv_data)
+    
+    # Apply each mutator function to the csv_data once
+    for mutator in csv_mutator:
+        csv_data = mutator(csv_data)  # apply mutation
+    
+    fuzzed_data = list_to_csv(csv_data)
+    
+    # TO DO: run data through binary
+    process_output = ""
+    
+    output_from_binary.put(process_output)
+    
+    return fuzzed_data
+        
