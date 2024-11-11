@@ -14,6 +14,9 @@ class Harness():
         elif "JSON" in file_type:
             print("Switching to JSON mutator")
             self.strategy = "JSON"
+        elif "JPEG" in file_type:
+            print("Switching to JPEG mutator")
+            self.strategy = "JPEG"
         else:
             print("No matching strategy found, defaulting to plaintext")
             self.strategy = "TEXT"
