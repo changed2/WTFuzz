@@ -32,10 +32,21 @@ class QEMUCoverage:
         blocks = set()
         try:
             with open(self.trace_file_location, 'r') as f:
+                # for line in f:
+                #     # Extract address from trace line
+                #     addr = int(re.findall(r"0x[0-9A-F]+", str(line), re.I)[0],16)
+                #     blocks.add(addr)
+                
+                trace_pattern = re.compile(r"Trace\s+(?:0x)?[0-9a-f]+:\s+\[([0-9a-f]+)\]", re.I)
+            
                 for line in f:
-                    # Extract address from trace line
-                    addr = int(re.findall(r"0x[0-9A-F]+", str(line), re.I)[0],16)
-                    blocks.add(addr)
+                    if 'Trace' not in line:
+                        continue
+                        
+                    match = trace_pattern.search(line)
+                    if match:
+                        addr = int(match.group(1), 16)
+                        blocks.add(addr)
         except FileNotFoundError:
             print("Warning: QEMU trace log not found")
         return blocks
@@ -48,8 +59,7 @@ class QEMUCoverage:
             
             # Get coverage from this run
             blocks = self._parse_trace_log()
-            
-            # Update coverage map
+
             for block in blocks:
                 self.coverage_map[block] += 1
                 

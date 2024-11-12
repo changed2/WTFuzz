@@ -68,8 +68,6 @@ class Harness():
         self.qemu_coverage.set_baseline(result['blocks'])
         self.best_coverage = len(result['blocks'])
         self.best_input = input_data
-        print(f"Baseline coverage established: {self.best_coverage} blocks")
 
     def get_best_input(self):
-        """Return the input that produced the best coverage."""
         return self.best_input
