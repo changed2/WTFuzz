@@ -4,11 +4,7 @@ import csv
 from mutators.negative_number_replacement import replace_numbers_with_negatives
 from mutators.random_character_append import append_random_characters
 from mutators.row_column_addition import add_rows_and_columns
-import random
-import re
 from collections import UserList
-
-from fuzzer import random_input
 
 class CSVObject(UserList):
     def __init__(self, data=None):
@@ -36,11 +32,14 @@ def list_to_csv(csv_object):
 def mutate_csv(csv_input_file, binary_file, harness):
     csv_object = read_csv(csv_input_file)
 
-    csv_mutator = [append_random_characters, replace_numbers_with_negatives, add_rows_and_columns]
+    mutations = [
+        append_random_characters,
+        replace_numbers_with_negatives,
+        add_rows_and_columns
+    ]
 
-    # Apply each mutation method to the csv_object
-    for mutator in csv_mutator:
-        mutator(csv_object) 
+    for mutation in mutations:
+        mutation(csv_object.data) 
         fuzzed_data = list_to_csv(csv_object)
         harness.run_retrieve(binary_file, fuzzed_data)
-
+        csv_object.data = read_csv(csv_input_file).data  
