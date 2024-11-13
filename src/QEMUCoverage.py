@@ -37,7 +37,7 @@ class QEMUCoverage:
                 #     addr = int(re.findall(r"0x[0-9A-F]+", str(line), re.I)[0],16)
                 #     blocks.add(addr)
                 
-                trace_pattern = re.compile(r"Trace\s+(?:0x)?[0-9a-f]+:\s+\[([0-9a-f]+)\]", re.I)
+                trace_pattern = re.compile(r"Trace [0-9]+: (0x\w+) ", re.I)
             
                 for line in f:
                     if 'Trace' not in line:
@@ -46,7 +46,7 @@ class QEMUCoverage:
                     match = trace_pattern.search(line)
                     if match:
                         addr = int(match.group(1), 16)
-                        blocks.add(addr)
+                        blocks.add(hex(addr))
         except FileNotFoundError:
             print("Warning: QEMU trace log not found")
         return blocks

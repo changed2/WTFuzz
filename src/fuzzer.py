@@ -24,8 +24,11 @@ if __name__ == "__main__":
     if not os.path.isdir("../example_inputs"):
         print("Unable to find example_inputs directory")
         
-    for binary in glob.glob("../binaries/*"):
+    for binary in glob.glob("../binaries/*"):    
         filename = os.path.basename(binary)
+        if filename != "json1":
+            continue
+        
         input_file = f"../example_inputs/{filename}.txt"
         harness = Harness(input_file)  # Create an instance
 
@@ -35,6 +38,7 @@ if __name__ == "__main__":
             case "JSON":
                 mutate_json(input_file, binary, harness)
             case "JPEG":
+                continue
                 mutate_jpeg(input_file, binary, harness)
             case _:
                 print(f"Unknown input file type: {harness.strategy}")
