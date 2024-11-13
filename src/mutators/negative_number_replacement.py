@@ -10,3 +10,4 @@ def replace_numbers_with_negatives(data, count=10):
         col = random.randint(0, len(data[row]) - 1)
         if re.match(r"^[0-9]+(\.[0-9]+)?$", data[row][col]):
             data[row][col] = "-" + data[row][col]
+

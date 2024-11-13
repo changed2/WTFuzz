@@ -40,7 +40,9 @@ def mutate_csv(csv_input_file, binary_file, harness):
     ]
 
     for mutation in mutations:
-        mutation(csv_object.data) 
+        print(csv_object.data)
+        mutation(csv_object.data)
         fuzzed_data = list_to_csv(csv_object)
+        print(fuzzed_data)
         harness.run_retrieve(binary_file, fuzzed_data)
         csv_object.data = read_csv(csv_input_file).data
