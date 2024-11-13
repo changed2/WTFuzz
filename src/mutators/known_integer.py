@@ -1,5 +1,6 @@
 import random
 import sys
+from typing import Iterator
 
 KNOWN_INTS = [
     0,
@@ -7,17 +8,33 @@ KNOWN_INTS = [
     sys.maxsize,
     -sys.maxsize,
     # Probably need more
+    127,
+    -128,
+    255,
+    32767,
+    -32768,
+    65535, 
+    2147483647,
+    -2147483648,
+    *((2**i) for i in range(1, 32)),
+    *((2**i - 1) for i in range(1, 32))
 ]
 
 # Insert known integer values at random positions.
-def known_integer_insertion(data) -> bytearray:
+def known_integer_insertion(data) -> Iterator[bytearray]:
     data = bytearray(data)
     
-    # Choose a random known integer and random position
-    known_int = random.choice(KNOWN_INTS)
-    position = random.randint(0, len(data) - 4)
-    
-    # Convert integer to bytes and insert
-    int_bytes = known_int.to_bytes(4, 'little', signed=True)
-    data[position:position+4] = int_bytes
-    return data
+    for known_int in KNOWN_INTS:
+        mutated_data = data[:]
+        
+        byte_length = (known_int.bit_length() + 7) // 8 or 1
+        
+        try:
+            int_bytes = known_int.to_bytes(byte_length, 'little', signed=True)
+        except OverflowError:
+            continue
+        
+        position = random.randint(0, max(0, len(mutated_data) - byte_length))
+        
+        mutated_data[position:position + byte_length] = int_bytes
+        yield mutated_data
