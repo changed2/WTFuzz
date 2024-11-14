@@ -17,15 +17,19 @@ class Harness():
         elif "JPEG" in file_type:
             print("Switching to JPEG mutator")
             self.strategy = "JPEG"
+        elif "XML" in file_type:
+            print("Switching to XML mutator")
+            self.strategy = "XML"
         else:
             print("No matching strategy found, defaulting to plaintext")
             self.strategy = "TEXT"
             
-    def run_retrieve(self, binary, input):        
+    def run_retrieve(self, binary, input):
         process = subprocess.Popen([binary], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output, errors = process.communicate(input=input.encode())
         
         if errors:
             filename = os.path.basename(binary)
-            crash_log(process.returncode, errors.decode().strip(), 
-                    input, output.decode().strip(), filename)
+            crash_log(process.returncode, errors.decode().strip(), input, output.decode().strip(), filename)
+            return True  # Indicate a crash occurred
+        return False  # No crash detected

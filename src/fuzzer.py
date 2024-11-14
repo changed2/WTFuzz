@@ -7,6 +7,7 @@ from exploit_detection import crash_log
 from strategies.CSV import *
 from strategies.JSON import *
 from strategies.JPEG import *
+from strategies.XML import *
 import os 
 import glob
 
@@ -36,5 +37,7 @@ if __name__ == "__main__":
                 mutate_json(input_file, binary, harness)
             case "JPEG":
                 mutate_jpeg(input_file, binary, harness)
+            case "XML":
+                mutate_xml(input_file, binary, harness)
             case _:
                 print(f"Unknown input file type: {harness.strategy}")
