@@ -5,3 +5,4 @@ src/__pycache__
 src/strategies/__pycache__/
 example_inputs/challenge1.txt
 fuzzer_output
+src/mutators/__pycache__/
