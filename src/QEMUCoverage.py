@@ -2,6 +2,7 @@ import subprocess
 import os
 import re
 from collections import defaultdict
+import tempfile
 
 ################################################################################
 #### Initial Basic implementation of QEMU-based code-coverage ######
@@ -24,48 +25,44 @@ class QEMUCoverage:
     def __init__(self):
         self.coverage_map = defaultdict(int)
         self.baseline_coverage = set()
-        self.trace_file_location = "/tmp/qemu_trace.log"
 
-    def _parse_trace_log(self):
-        # extract basic block coverage.
-        # For now gets all blocks covered by the input, will need to re-do this to account for unique addresses/blocks...
+    def _parse_trace_log(self, trace_file_location):
         blocks = set()
         try:
-            with open(self.trace_file_location, 'r') as f:
-                # for line in f:
-                #     # Extract address from trace line
-                #     addr = int(re.findall(r"0x[0-9A-F]+", str(line), re.I)[0],16)
-                #     blocks.add(addr)
-                
+            with open(trace_file_location, 'r') as f:
                 trace_pattern = re.compile(r"Trace [0-9]+: (0x\w+) ", re.I)
-            
+                
                 for line in f:
                     if 'Trace' not in line:
                         continue
-                        
+                    
                     match = trace_pattern.search(line)
                     if match:
                         addr = int(match.group(1), 16)
-                        blocks.add(hex(addr))
+                        blocks.add(addr)
         except FileNotFoundError:
             print("Warning: QEMU trace log not found")
         return blocks
 
     def get_coverage(self, binary, input):
-        """Get coverage information for a single run."""
+        trace_file = tempfile.NamedTemporaryFile(delete=False)
+        trace_file_location = trace_file.name
+        trace_file.close()
+        
         try:
-            process = subprocess.Popen(["qemu-x86_64", "-d", "exec", "-D", f"{self.trace_file_location}", f"{binary}"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            process = subprocess.Popen(
+                ["qemu-x86_64", "-d", "exec", "-D", trace_file_location, binary],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
             output, errors = process.communicate(input=input.encode())
             
             # Get coverage from this run
-            blocks = self._parse_trace_log()
+            blocks = self._parse_trace_log(trace_file_location)
 
-            for block in blocks:
-                self.coverage_map[block] += 1
-                
             return {
                 'blocks': blocks,
-                'new_blocks': blocks - self.baseline_coverage if self.baseline_coverage else blocks,
                 'output': output,
                 'errors': errors,
                 'returncode': process.returncode
@@ -73,8 +70,8 @@ class QEMUCoverage:
             
         finally:
             # Remove tracefile after each run to reduce its size.
-            if os.path.exists(self.trace_file_location):
-                os.remove(self.trace_file_location)
+            if os.path.exists(trace_file_location):
+                os.remove(trace_file_location)
 
     def set_baseline(self, blocks):
         """Set baseline coverage for comparison."""
