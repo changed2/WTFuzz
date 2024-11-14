@@ -34,7 +34,7 @@ if __name__ == "__main__":
                 mutate_csv(input_file, binary, harness)
             case "JSON":
                 mutate_json(input_file, binary, harness)
-            # case "JPEG":
-            #     mutate_jpeg(input_file, binary, harness)
+            case "JPEG":
+                mutate_jpeg(input_file, binary, harness)
             case _:
                 print(f"Unknown input file type: {harness.strategy}")
