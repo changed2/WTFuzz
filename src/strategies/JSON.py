@@ -16,9 +16,9 @@ class JSONObject(UserDict):
 def read_json(input_file):
     with open(input_file, "r") as f:
         data = json.load(f)
-        return JSONObject(data)
+        return data
 
-def helper_add_key(mutated_json, mutated_inputs):
+def helper_add_key(mutated_json):
     value_options = [
         None,
         random.randint(-1000, 1000),
@@ -51,26 +51,26 @@ def mutate_keys(key, value, mutated_json):
         for mutated_key in helper_string(key):
             temp_json = mutated_json.copy()
             temp_json[mutated_key] = value
-            yield json.dumps(temp_json).encode()
+            return json.dumps(temp_json).encode()
 
     elif isinstance(key, int):
         for mutated_key in helper_integer(key):
             temp_json = mutated_json.copy()
             temp_json[str(mutated_key)] = value
-            yield json.dumps(temp_json).encode()
+            return json.dumps(temp_json).encode()
 
 def mutate_values(key, value, mutated_json):
     if isinstance(value, str):
         for mutated_value in helper_string(value):
             temp_json = mutated_json.copy()
             temp_json[key] = mutated_value
-            yield json.dumps(temp_json).encode()
+            return json.dumps(temp_json).encode()
 
     elif isinstance(value, int):
         for mutated_value in helper_integer(value):
             temp_json = mutated_json.copy()
             temp_json[key] = mutated_value
-            yield json.dumps(temp_json).encode()
+            return json.dumps(temp_json).encode()
 
     elif isinstance(value, list):
         for index in range(len(value)):
@@ -79,30 +79,30 @@ def mutate_values(key, value, mutated_json):
             for mutated_element in helper_list_element(value[index]):
                 mutated_list[index] = mutated_element
                 temp_json[key] = mutated_list
-                yield json.dumps(temp_json).encode()
+                return json.dumps(temp_json).encode()
 
-def remove_key(key, mutated_json):
+def remove_key(key, value, mutated_json):
     temp_json = mutated_json.copy()
     del temp_json[key]
-    yield json.dumps(temp_json).encode()
+    return json.dumps(temp_json).encode()
 
-def null_key(key, mutated_json):
+def null_key(key, value, mutated_json):
     temp_json = mutated_json.copy()
     temp_json[key] = None
-    yield json.dumps(temp_json).encode()
+    return json.dumps(temp_json).encode()
 
-def add_keys(mutated_json):
+def add_keys(key, value, mutated_json):
     temp_json = mutated_json.copy()
     for _ in range(250):
         random_key = ''.join(random.choices(string.ascii_letters, k=5))
         temp_json[random_key] = random.randint(0, 100)
-    yield json.dumps(temp_json).encode()
+    return json.dumps(temp_json).encode()
 
 def mutate_json(json_input_file, binary_file, harness):
     json_object = read_json(json_input_file)
     original_json = json_object.copy()
 
-    mutations = [
+    json_mutations = [
         mutate_keys,
         mutate_values,
         remove_key,
@@ -110,8 +110,9 @@ def mutate_json(json_input_file, binary_file, harness):
         add_keys
     ]
     
-    for mutation in mutations:
-        for key, value in json_object.items():
-            for fuzzed_data in mutation(key, value, json_object):
-                harness.run_retrieve(binary_file, fuzzed_data)
-            json_object = original_json.copy()
+    mutator = random.choice(json_mutations)
+    key, value = random.choice(list(json_object.items()))
+    fuzzed_data = mutator(key, value, original_json)
+    print(fuzzed_data)
+    return fuzzed_data
+            
