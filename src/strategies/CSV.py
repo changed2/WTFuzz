@@ -7,6 +7,7 @@ from mutators.row_column_addition import add_rows_and_columns
 from mutators.special_characters import insert_special_characters
 from mutators.extra_comma_insert import insert_extra_commas
 from mutators.extreme_numeric_values import insert_extreme_numeric_values
+from mutators.simulate_eof import simulate_eof
 from collections import UserList
 
 class CSVObject(UserList):
@@ -41,7 +42,8 @@ def mutate_csv(csv_input_file, binary_file, harness):
         add_rows_and_columns,
         insert_special_characters,
         insert_extra_commas,
-        insert_extreme_numeric_values
+        insert_extreme_numeric_values,
+        simulate_eof
     ]
 
     for mutation in mutations:
