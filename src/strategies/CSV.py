@@ -4,6 +4,7 @@ import csv
 import random
 import re
 from collections import UserList
+from io import StringIO
 
 from fuzzer import random_input
 
@@ -53,6 +54,14 @@ def read_csv(input_file):
             data.append(row)
     return CSVObject(data)
 
+# Helper function to read CSV data from a string and create a CSVObject
+def read_csv_from_string(csv_data):
+    data = []
+    csv_reader = csv.reader(StringIO(csv_data))
+    for row in csv_reader:
+        data.append(row)
+    return CSVObject(data)
+
 # Convert back to csv from list
 def list_to_csv(csv_object):
     csv_string = ""
@@ -63,14 +72,15 @@ def list_to_csv(csv_object):
     return csv_string
 
 # main function: csv fuzzer
-def mutate_csv(csv_input_file, binary_file, harness):
-    csv_object = read_csv(csv_input_file)
+def mutate_csv(csv_data):
+    csv_object = read_csv_from_string(csv_data)
 
     csv_mutator = [csv_object.append_characters, csv_object.replace_with_negatives, csv_object.add_rows_and_cols]
 
-    # Apply each mutation method to the csv_object
-    for mutator in csv_mutator:
-        mutator() 
-        fuzzed_data = list_to_csv(csv_object)
-        harness.run_retrieve(binary_file, fuzzed_data)
+    mutator = random.choice(csv_mutator)
+    mutator()
+    
+    # Convert mutated CSVObject back to CSV string format
+    fuzzed_data = list_to_csv(csv_object)
+    return fuzzed_data  # Return the mutated data instead of passing it to the harness
 
