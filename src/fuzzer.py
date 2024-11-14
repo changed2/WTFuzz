@@ -54,7 +54,7 @@ if __name__ == "__main__":
 
     for binary in glob.glob("../binaries/*"):
         filename = os.path.basename(binary)
-        if filename != "csv1":
+        if filename != "csv1" and filename != "json1":
             continue
 
         input_file = f"../example_inputs/{filename}.txt"
@@ -99,6 +99,7 @@ if __name__ == "__main__":
 
                 for future in as_completed(futures):
                     result = future.result()
+                    if (strategy == "JSON"): print(result)
                     if result['crash_detected']:
                         print("Crash detected! Fuzzing terminated.")
                         crash_event.set()
