@@ -44,14 +44,14 @@
 
 #     save_jpeg(jpeg_mutator, output_file)
 
-#     mutated_data = bytes(jpeg_mutator) 
+#     mutated_data = bytes(jpeg_mutator)
 #     harness.run_retrieve(output_file, mutated_data)
 
 
-    
-# # A JPEG image consists of a sequence of segments, 
-# # each beginning with a marker, each of which begins 
-# # with a 0xFF byte, followed by a byte indicating what 
+
+# # A JPEG image consists of a sequence of segments,
+# # each beginning with a marker, each of which begins
+# # with a 0xFF byte, followed by a byte indicating what
 # # kind of marker it is.
 
 
