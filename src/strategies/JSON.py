@@ -123,7 +123,7 @@ def mutate(json_input: bytes) -> bytearray:
     add_key(json_obj, mutated_inputs)
     
     temp_json = mutated_json.copy()
-    for _ in range(500):
+    for _ in range(250):
         random_key = ''.join(random.choices(string.ascii_letters, k=5))
         temp_json[random_key] = random.randint(0, 100)
     mutated_inputs.append(json.dumps(temp_json).encode())
