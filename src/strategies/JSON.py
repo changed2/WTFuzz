@@ -1,131 +1,117 @@
 import os
 import json
-from collections import UserList, UserDict
-import subprocess
+import random
+import string
+from collections import UserDict
 from pwn import *
+from mutators.bitflip import bit_flip
+from mutators.buffer_overflow import buffer_overflow
+from mutators.byteflip import byte_flip
+from mutators.known_integer import known_integer_insertion
 
-class JsonObject:
-    def __init__(self, properties=None):
-        self.properties = properties or {}
+class JSONObject(UserDict):
+    def __init__(self, data=None):
+        super().__init__(data or {})
 
-    def replace(self, key, value):
-        new_properties = self.properties.copy()
-        new_properties[key] = value
-        return JsonObject(new_properties)
-
-    def remove(self, key):
-        if key in self.properties:
-            new_properties = self.properties.copy()
-            del new_properties[key]
-            return JsonObject(new_properties)
-        return self
-
-    def replace_in_array(self, key, index, value):
-        if key in self.properties and isinstance(self.properties[key], list):
-            new_properties = self.properties.copy()
-            array = new_properties[key].copy()
-            if 0 <= index < len(array):
-                array[index] = value
-            else:
-                array.append(value)
-            new_properties[key] = array
-            return JsonObject(new_properties)
-        return self
-
-    def append_in_array(self, key, value):
-        if key in self.properties and isinstance(self.properties[key], list):
-            new_properties = self.properties.copy()
-            array = new_properties[key].copy()
-            array.append(value)
-            new_properties[key] = array
-            return JsonObject(new_properties)
-        return self
-
-def format_input(input_file):
+def read_json(input_file):
     with open(input_file, "r") as f:
-        sample_input = f.read()
-        return sample_input
+        data = json.load(f)
+        return JSONObject(data)
 
+def helper_add_key(mutated_json, mutated_inputs):
+    value_options = [
+        None,
+        random.randint(-1000, 1000),
+        ''.join(random.choices(string.ascii_letters, k=10)),
+        [random.randint(0, 5) for _ in range(3)],
+        {"nested_key": "nested_value"}
+    ]
+    for value in value_options:
+        temp_json = mutated_json.copy()
+        random_key = ''.join(random.choices(string.ascii_letters, k=5))
+        temp_json[random_key] = value
+        yield json.dumps(temp_json).encode()
 
-def mutate(json_input: bytes):
-    json_obj = json.loads(json_input)
+def helper_string(data):
+    mutations = [
+        buffer_overflow(data.encode()).decode(errors='ignore'),
+        bit_flip(data.encode()).decode(errors='ignore'),
+        byte_flip(data.encode()).decode(errors='ignore')
+    ]
+    return mutations
 
-    if "input" in json_obj:
-        json_obj["len"] = len(json_obj["input"])
+def helper_integer(data):
+    mutated_integers = []
+    for mutated_data in known_integer_insertion(data.to_bytes(4, 'little')):
+        mutated_integers.append(int.from_bytes(mutated_data, 'little', signed=True))
+    return mutated_integers
 
-    obj = JsonObject(json_obj)
+def mutate_keys(key, value, mutated_json):
+    if isinstance(key, str):
+        for mutated_key in helper_string(key):
+            temp_json = mutated_json.copy()
+            temp_json[mutated_key] = value
+            yield json.dumps(temp_json).encode()
 
-    mutated_inputs = []
+    elif isinstance(key, int):
+        for mutated_key in helper_integer(key):
+            temp_json = mutated_json.copy()
+            temp_json[str(mutated_key)] = value
+            yield json.dumps(temp_json).encode()
 
-    '''i think the buffer overflow is just the first key'''
-    mutated_inputs.append(json.dumps({}))
+def mutate_values(key, value, mutated_json):
+    if isinstance(value, str):
+        for mutated_value in helper_string(value):
+            temp_json = mutated_json.copy()
+            temp_json[key] = mutated_value
+            yield json.dumps(temp_json).encode()
 
+    elif isinstance(value, int):
+        for mutated_value in helper_integer(value):
+            temp_json = mutated_json.copy()
+            temp_json[key] = mutated_value
+            yield json.dumps(temp_json).encode()
 
-    for key in list(json_obj.keys()):
-        if key == "len":
-            # difference greater than 30 between input length and length in json
-            #mutated_inputs.append(json.dumps(obj.replace("len", 42).properties))
-            mutated_inputs.append(json.dumps(obj.replace("len", 500).properties))
-            mutated_inputs.append(json.dumps(obj.replace("len", -1).properties))
-            mutated_inputs.append(json.dumps(obj.replace("len", None).properties))
+    elif isinstance(value, list):
+        for index in range(len(value)):
+            temp_json = mutated_json.copy()
+            mutated_list = value.copy()
+            for mutated_element in helper_list_element(value[index]):
+                mutated_list[index] = mutated_element
+                temp_json[key] = mutated_list
+                yield json.dumps(temp_json).encode()
 
-        if key == "input":
-            # buffer overflow case
-            buffer_overflow = cyclic(10024).decode()
-            mutated = obj.replace(key, buffer_overflow)
-            mutated2 = mutated.replace("len", len(buffer_overflow))
-            mutated_inputs.append(json.dumps(mutated2.properties))
+def remove_key(key, mutated_json):
+    temp_json = mutated_json.copy()
+    del temp_json[key]
+    yield json.dumps(temp_json).encode()
 
-            # null case
-            mutated = obj.replace(key, None)
-            mutated2 = mutated.replace("len", 0)
-            mutated_inputs.append(json.dumps(mutated2.properties))
+def null_key(key, mutated_json):
+    temp_json = mutated_json.copy()
+    temp_json[key] = None
+    yield json.dumps(temp_json).encode()
 
-            # remove key case
-            mutated = obj.remove(key)
-            mutated2 = mutated.replace("len", 0)
-            mutated_inputs.append(json.dumps(mutated2.properties))
-
-            # binary data case
-            binary_string = b'\xFF\x00'.hex()
-            mutated = obj.replace(key, binary_string)
-            mutated2 = mutated.replace("len", len(binary_string))
-            mutated_inputs.append(json.dumps(mutated2.properties))
-
-        if key == "more_data" and isinstance(json_obj["more_data"], list):
-            # empty array case
-            mutated = obj.replace(key, [])
-            mutated_inputs.append(json.dumps(mutated.properties))
-
-            # replace each value in array with null case
-            for i in range(len(json_obj["more_data"])):
-                mutated_array_replace = obj.replace_in_array("more_data", i, None)
-                mutated_inputs.append(json.dumps(mutated_array_replace.properties))
-
-            # null array case
-            mutated = obj.replace(key, None)
-            mutated_inputs.append(json.dumps(mutated.properties))
-
-            # append normal value to array case
-            mutated = obj.append_in_array("more_data", "aa")
-            mutated_inputs.append(json.dumps(mutated.properties))
-
-            # append null to array case
-            mutated = obj.append_in_array("more_data", None)
-            mutated_inputs.append(json.dumps(mutated.properties))
-
-            # large list case
-            large_array = ["element" + str(i) for i in range(124)]
-            json_obj_with_large_array = obj.replace("more_data", large_array)
-            mutated_inputs.append(json.dumps(json_obj_with_large_array.properties))
-
-    return mutated_inputs
-
+def add_keys(mutated_json):
+    temp_json = mutated_json.copy()
+    for _ in range(250):
+        random_key = ''.join(random.choices(string.ascii_letters, k=5))
+        temp_json[random_key] = random.randint(0, 100)
+    yield json.dumps(temp_json).encode()
 
 def mutate_json(json_input_file, binary_file, harness):
-    sample_json = format_input(json_input_file)
-    mutated_input = mutate(sample_json)
+    json_object = read_json(json_input_file)
+    original_json = json_object.copy()
 
-    for i in mutated_input:
-        fuzzed_data = ''.join(i)
-        harness.run_retrieve(binary_file, fuzzed_data)
+    mutations = [
+        mutate_keys,
+        mutate_values,
+        remove_key,
+        null_key,
+        add_keys
+    ]
+    
+    for mutation in mutations:
+        for key, value in json_object.items():
+            for fuzzed_data in mutation(key, value, json_object):
+                harness.run_retrieve(binary_file, fuzzed_data)
+            json_object = original_json.copy()
