@@ -7,7 +7,7 @@ from exploit_detection import crash_log
 from strategies.CSV import *
 from strategies.JSON import *
 from strategies.JPEG import *
-import os 
+import os
 import glob
 
 def random_input(max_length: int = 100, char_start: int = 32, char_range: int = 32) -> str:
@@ -20,10 +20,10 @@ def random_input(max_length: int = 100, char_start: int = 32, char_range: int = 
 if __name__ == "__main__":
     if not os.path.isdir("../binaries"):
         print("Unable to find binaries directory")
-        
+
     if not os.path.isdir("../example_inputs"):
         print("Unable to find example_inputs directory")
-        
+
     for binary in glob.glob("../binaries/*"):
         filename = os.path.basename(binary)
         input_file = f"../example_inputs/{filename}.txt"
@@ -34,7 +34,7 @@ if __name__ == "__main__":
                 mutate_csv(input_file, binary, harness)
             case "JSON":
                 mutate_json(input_file, binary, harness)
-            case "JPEG":
-                mutate_jpeg(input_file, binary, harness)
+            # case "JPEG":
+            #     mutate_jpeg(input_file, binary, harness)
             case _:
                 print(f"Unknown input file type: {harness.strategy}")
