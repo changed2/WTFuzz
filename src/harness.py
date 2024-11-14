@@ -1,11 +1,14 @@
 from magic import from_file
 import subprocess
+import threading
 from exploit_detection import crash_log
 import os
 from QEMUCoverage import QEMUCoverage
 
 class Harness():
     strategy = None
+    _crash_logged = False  # Class-level flag
+    _crash_lock = threading.Lock()  # Class-level lock
     
     def __init__(self, input_file):
         file_type = from_file(input_file)
@@ -27,14 +30,18 @@ class Harness():
         result = qemu_coverage.get_coverage(binary, input_data)
 
         if result['errors']:
-            filename = os.path.basename(binary)
-            crash_log(
-                result['returncode'],
-                result['errors'].decode().strip(),
-                input_data,
-                result['output'].decode().strip(),
-                filename
-            )
+            # Use the lock to check and set crash logged status
+            with self._crash_lock:
+                if not self._crash_logged:
+                    self._crash_logged = True
+                    filename = os.path.basename(binary)
+                    crash_log(
+                        result['returncode'],
+                        result['errors'].decode().strip(),
+                        input_data,
+                        result['output'].decode().strip(),
+                        filename
+                    )
 
         return result
     
@@ -48,3 +55,8 @@ class Harness():
 
     def get_best_input(self):
         return self.best_input
+
+    @classmethod
+    def reset_crash_state(cls):
+        """Reset the crash logged state when starting with a new binary"""
+        cls._crash_logged = False
