@@ -8,7 +8,7 @@ from exploit_detection import crash_log
 from strategies.CSV import *
 from strategies.JSON import *
 from strategies.JPEG import *
-import os 
+import os
 import glob
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -48,7 +48,7 @@ def random_input(max_length: int = 100, char_start: int = 32, char_range: int = 
 if __name__ == "__main__":
     if not os.path.isdir("../binaries"):
         print("Unable to find binaries directory")
-        
+
     if not os.path.isdir("../example_inputs"):
         print("Unable to find example_inputs directory")
         
