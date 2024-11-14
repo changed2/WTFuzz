@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import random
+import threading
 import sys
 from harness import Harness
 from exploit_detection import crash_log
@@ -11,8 +12,13 @@ import os
 import glob
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+crash_event = threading.Event()
+
 def fuzz_worker(strategy_func, binary, harness, current_input_data):
     try:
+        if crash_event.is_set():
+            return
+
         mutated_input_data = strategy_func(current_input_data)
         result = harness.run_retrieve(binary, mutated_input_data)
         coverage = len(result['blocks'])
@@ -55,6 +61,7 @@ if __name__ == "__main__":
         with open(input_file, 'r') as f:
             input_data = f.read()
 
+        Harness.reset_crash_state()
         harness = Harness(input_file)
         strategy = harness.strategy
 
@@ -87,11 +94,18 @@ if __name__ == "__main__":
                     result = future.result()
                     if result['crash_detected']:
                         print("Crash detected! Fuzzing terminated.")
+                        crash_event.set()
+
+                        # Cancel remaining futures that haven't started
+                        for f in futures:
+                            f.cancel()  # Cancel any pending tasks
+
                         crashed = True
                         break
                     if result['coverage'] > best_coverage:
                         best_coverage = result['coverage']
                         best_input_data = result['mutated_input_data']
                         print(f"New best coverage: {best_coverage} blocks")
+                        # print(f"New best payload: {len(best_input_data)}")
 
         print(f"Fuzzing finished for binary: {filename}")
