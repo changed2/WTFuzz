@@ -12,6 +12,22 @@ def format_input(input_file):
         sample_input = f.read()
         return sample_input
 
+def add_key(mutated_json, mutated_inputs):
+    # Define possible types of values to add
+    value_options = [
+        None,                                     # No value
+        random.randint(-1000, 1000),              # Integer
+        ''.join(random.choices(string.ascii_letters, k=10)),  # String
+        [random.randint(0, 5) for _ in range(3)], # List of integers
+        {"nested_key": "nested_value"}            # Nested object
+    ]
+
+    for value in value_options:
+        temp_json = mutated_json.copy()
+        random_key = ''.join(random.choices(string.ascii_letters, k=5))
+        temp_json[random_key] = value
+        mutated_inputs.append(json.dumps(temp_json).encode())
+
 def mutate_string(data):
     mutations = [
         buffer_overflow(data.encode()).decode(errors='ignore'),
@@ -81,10 +97,21 @@ def apply_mutations(key, value, mutated_json, mutated_inputs):
             temp_json = mutated_json.copy()
             temp_json[key] = mutated_value
             mutated_inputs.append(json.dumps(temp_json).encode())
+            
+    temp_json = mutated_json.copy()
+    del temp_json[key]
+    mutated_inputs.append(json.dumps(temp_json).encode())
+    
+    temp_json = mutated_json.copy()
+    temp_json[key] = None
+    mutated_inputs.append(json.dumps(temp_json).encode())
+    
+    
+    
 
 def mutate(json_input: bytes) -> bytearray:
     json_obj = json.loads(json_input)
-    mutated_inputs = []
+    mutated_inputs = [b'{}']
 
     for key, value in json_obj.items():
         mutated_json = json_obj.copy()
@@ -93,13 +120,26 @@ def mutate(json_input: bytes) -> bytearray:
         
         apply_mutations(key, value, mutated_json, mutated_inputs)
 
+    add_key(json_obj, mutated_inputs)
+    
+    temp_json = mutated_json.copy()
+    for _ in range(500):
+        random_key = ''.join(random.choices(string.ascii_letters, k=5))
+        temp_json[random_key] = random.randint(0, 100)
+    mutated_inputs.append(json.dumps(temp_json).encode())
+
     return mutated_inputs
 
+def print_mutated_inputs(mutated_inputs):
+    for i, mutation in enumerate(mutated_inputs):
+        # Decode the mutation (it's in byte format) and limit to 25 characters
+        print(f"Mutation {i+1}: {mutation.decode()[:200]}")
 
 def mutate_json(json_input_file, binary_file, harness):
     sample_json = format_input(json_input_file)
     mutated_input = mutate(sample_json)
 
+    #print_mutated_inputs(mutated_input)
     for i in mutated_input:
         res = harness.run_retrieve(binary_file, i.decode())
         if res:

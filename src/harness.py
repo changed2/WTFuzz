@@ -20,6 +20,9 @@ class Harness():
         elif "XML" in file_type:
             print("Switching to XML mutator")
             self.strategy = "XML"
+        elif "HTML document, ASCII text" == file_type:
+            print("Switching to XML mutator")
+            self.strategy = "XML"
         else:
             print("No matching strategy found, defaulting to plaintext")
             self.strategy = "TEXT"
