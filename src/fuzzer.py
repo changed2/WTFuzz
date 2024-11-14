@@ -9,6 +9,7 @@ from strategies.JSON import *
 from strategies.JPEG import *
 import os 
 import glob
+import csv
 
 def random_input(max_length: int = 100, char_start: int = 32, char_range: int = 32) -> str:
     out = ""
@@ -26,16 +27,27 @@ if __name__ == "__main__":
         
     for binary in glob.glob("../binaries/*"):    
         filename = os.path.basename(binary)
-        if filename != "json1":
-            continue
+        # if filename != "json1":
+        #     continue
         
         input_file = f"../example_inputs/{filename}.txt"
         harness = Harness(input_file)  # Create an instance
 
+        input_data = null
+        if harness.strategy == "CSV":
+            with open(input_file, mode='r') as input_file:
+                csv_reader = csv.reader(input_file)
+                input_data = [row for row in csv_reader]
+        elif harness.strategy != "JPEG":
+            with open(input_file, mode='r') as input_file:
+                input_data = input_file.read()
+
         match harness.strategy:
             case "CSV":
-                mutate_csv(input_file, binary, harness)
+                fuzzed_data = mutate_csv(input_data, binary, harness)
+                harness.run_retrieve(binary, fuzzed_data)
             case "JSON":
+                continue
                 mutate_json(input_file, binary, harness)
             case "JPEG":
                 continue

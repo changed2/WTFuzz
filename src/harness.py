@@ -3,11 +3,25 @@ import subprocess
 from exploit_detection import crash_log
 import os
 from QEMUCoverage import QEMUCoverage
+from typing import List, Optional
+import csv
+import io
+
+def csv_to_string(csv_data: List[List[str]]) -> str:
+    """Convert CSV data (list of lists) back to string format"""
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerows(csv_data)
+    return output.getvalue()
 
 class Harness():
-    strategy = None
-    
     def __init__(self, input_file):
+        self.strategy = None
+        self.crash_detected = False
+        self.qemu_coverage = QEMUCoverage()
+        self.best_coverage = 0
+        self.best_input = None
+        
         file_type = from_file(input_file)
         if "CSV" in file_type:
             print("Switching to CSV mutator")
@@ -21,22 +35,8 @@ class Harness():
         else:
             print("No matching strategy found, defaulting to plaintext")
             self.strategy = "TEXT"
-        
-        # Initialize QEMU coverage tracking
-        self.qemu_coverage = QEMUCoverage()
-        self.best_coverage = 0
-        self.best_input = None
             
     def run_retrieve(self, binary, input):        
-        # process = subprocess.Popen([binary], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        # output, errors = process.communicate(input=input.encode())
-        
-        # if errors:
-        #     filename = os.path.basename(binary)
-        #     crash_log(process.returncode, errors.decode().strip(), 
-        #             input, output.decode().strip(), filename)
-        
-        # CHECK QEMUCOVERAGE.py FOR INITIAL FEATURES IMPLEMENTED.
         result = self.qemu_coverage.get_coverage(binary, input)
         
         # Check for crashes
@@ -49,25 +49,26 @@ class Harness():
                 result['output'].decode().strip(),
                 filename
             )
+            self.crash_detected = True  # Set crash flag
+            return False
         
         # Update best coverage if we found new blocks
-        # Very basic, needs more logic...
         current_coverage = len(result['blocks'])
         if current_coverage > self.best_coverage:
             self.best_coverage = current_coverage
             self.best_input = input
             print(f"New best coverage found: {current_coverage} blocks")
-            return True  # Indicate that we found better coverage
+            return True
             
         return False
     
-    """Establish baseline coverage for initial input."""
-    # Donno if this is necessary, but added stub anyway...
     def establish_baseline(self, binary, input_data):
+        if (self.strategy == 'CSV'):
+            input_data = csv_to_string(input_data)
         result = self.qemu_coverage.get_coverage(binary, input_data)
         self.qemu_coverage.set_baseline(result['blocks'])
         self.best_coverage = len(result['blocks'])
         self.best_input = input_data
-
+        
     def get_best_input(self):
         return self.best_input

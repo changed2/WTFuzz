@@ -63,14 +63,23 @@ def list_to_csv(csv_object):
     return csv_string
 
 # main function: csv fuzzer
-def mutate_csv(csv_input_file, binary_file, harness):
-    csv_object = read_csv(csv_input_file)
+def mutate_csv(csv_data):
+    csv_object = CSVObject(csv_data)
 
     csv_mutator = [csv_object.append_characters, csv_object.replace_with_negatives, csv_object.add_rows_and_cols]
 
+    mutator = random.choice(csv_mutator)
+    print(f"chosen mutator: {mutator.__name__}")
+    mutator()
+    
+    # Convert mutated CSVObject back to CSV string format
+    fuzzed_data = list_to_csv(csv_object)
+    return fuzzed_data  # Return the mutated data instead of passing it to the harness
+
+
     # Apply each mutation method to the csv_object
-    for mutator in csv_mutator:
-        mutator() 
-        fuzzed_data = list_to_csv(csv_object)
-        harness.run_retrieve(binary_file, fuzzed_data)
+    # for mutator in csv_mutator:
+    #     mutator() 
+    #     fuzzed_data = list_to_csv(csv_object)
+    #     harness.run_retrieve(binary_file, fuzzed_data)
 
