@@ -43,7 +43,10 @@ def mutate_string(data):
 def mutate_integer(data):
     if isinstance(data, int):
         mutated_integers = []
-        for mutated_data in known_integer_insertion(data.to_bytes(4, 'little')):
+        # Pass the data to known_integer_insertion, which should return a bytearray
+        mutated_data_list = known_integer_insertion(data.to_bytes(4, 'little'))
+        # Convert each mutated byte sequence back to an integer
+        for mutated_data in mutated_data_list:
             mutated_integers.append(int.from_bytes(mutated_data, 'little', signed=True))
         return mutated_integers
     else:
@@ -87,14 +90,14 @@ def apply_mutations(key, value, mutated_json, mutated_inputs):
             
     if isinstance(value, list):
         for index in range(len(value)):
-            mutated_json = json_obj.copy()
+            mutated_json_val = mutated_json.copy()
             mutated_list = value.copy()
                 
             # apply mutations to the list element at the current index
             for mutated_element in mutate_list_element(value[index]):
                 mutated_list[index] = mutated_element
-                mutated_json[key] = mutated_list
-                mutated_inputs.append(json.dumps(mutated_json).encode())
+                mutated_json_val[key] = mutated_list
+                mutated_inputs.append(json.dumps(mutated_json_val).encode())
             
     temp_json = mutated_json.copy()
     del temp_json[key]
@@ -141,7 +144,7 @@ def mutate_json(input_data):
     if mutated_input:  # Check if the list is not empty
         selected_input = random.choice(mutated_input)
         selected_index = mutated_input.index(selected_input)
-        print(f"Selected index: {selected_index}, Value: {selected_input.decode()}")
-        return selected_input  # Return the selected input
+        # print(f"Selected index: {selected_index}")
+        return selected_input.decode()  # Return the selected input
     else:
         return None  # Return None if mutated_input is empty
