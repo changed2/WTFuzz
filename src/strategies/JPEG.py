@@ -52,10 +52,44 @@ def corrupt_dqt(data):
             if corrupt_index + i < len(data):
                 data[corrupt_index + i] = random.randint(0, 255)
 
+# 3: shuffle random segements e.g. DQT, DHT, SOF
+def shuffle_segments(data):
+    segments = [b'\xFF\xC0', b'\xFF\xC2', b'\xFF\xC4', b'\xFF\xDB', b'\xFF\xDD', b'\xFF\xDA', b'\xFF\xD9']
+    start_indices = [data.find(segment) for segment in segments if data.find(segment) != -1]
+    if not start_indices:
+        return
+    start_indices.sort()
+    segment_data = [data[start:end] for start, end in zip(start_indices, start_indices[1:] + [None])]
+    random.shuffle(segment_data)
+    new_data = bytearray()
+    for segment in segment_data:
+        new_data.extend(segment)
+    data[:] = new_data
+
+# 4: huffman table DHT
+def corrupt_huffman_tables(data):
+    dht_index = data.find(b'\xFF\xC4')
+    if dht_index != -1:
+        length_index = dht_index + 2
+        length = int.from_bytes(data[length_index:length_index + 2], 'big')
+        end_index = length_index + 2 + length
+        for i in range(length_index + 2, end_index):
+            data[i] = data[i] ^ random.randint(0x00, 0xFF)
+
+#5: corrupt start and end of frame
+def corrupt_soi_eoi(data):
+    soi_index = data.find(b'\xFF\xD8')
+    if soi_index != -1:
+        data[soi_index:soi_index+2] = b'\xFF\xD7'
+    eoi_index = data.rfind(b'\xFF\xD9')
+    if eoi_index != -1:
+        data[eoi_index:eoi_index+2] = b'\xFF\xD8'
+
+
 def mutate_jpeg(input_file, binary, harness):
     jpeg_data = JPEGObject(read_jpeg(input_file))
     mutations = [
-        extend_sof, corrupt_dqt
+        extend_sof, corrupt_dqt, shuffle_segments, corrupt_huffman_tables
     ]
 
     for mutation in mutations:
