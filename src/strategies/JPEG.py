@@ -84,12 +84,40 @@ def corrupt_soi_eoi(data):
     eoi_index = data.rfind(b'\xFF\xD9')
     if eoi_index != -1:
         data[eoi_index:eoi_index+2] = b'\xFF\xD8'
+#6: remove data to have terminated data stream
+def remove_random_segment(data):
+    segments = [b'\xFF\xE0', b'\xFF\xE1', b'\xFF\xDA']  # APP0, APP1, SOS
+    segment = random.choice(segments)
+    start_index = data.find(segment)
+    if start_index != -1:
+        length_index = start_index + 2
+        length = int.from_bytes(data[length_index:length_index + 2], 'big')
+        end_index = start_index + 2 + length
+        del data[start_index:end_index]
+
+# 7: insert segments with length of zero
+def insert_zero_length_segments(data):
+    markers = [b'\xFF\xC0', b'\xFF\xC4', b'\xFF\xDB']
+    for marker in markers:
+        index = data.find(marker)
+        if index != -1:
+            # Prepare zero-length marker to insert
+            zero_length_marker = marker + b'\x00\x00'
+            # Modify the bytearray directly using slicing
+            data[index:index] = zero_length_marker
+
 
 
 def mutate_jpeg(input_file, binary, harness):
     jpeg_data = JPEGObject(read_jpeg(input_file))
     mutations = [
-        extend_sof, corrupt_dqt, shuffle_segments, corrupt_huffman_tables
+        extend_sof, 
+        corrupt_dqt, 
+        shuffle_segments, 
+        corrupt_huffman_tables,
+        corrupt_soi_eoi,
+        remove_random_segment,
+        insert_zero_length_segments
     ]
 
     for mutation in mutations:
