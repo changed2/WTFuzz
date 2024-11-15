@@ -55,25 +55,33 @@ def mutate_list_element(element):
         return mutate_integer(element)
     return []
 
-
-def apply_mutations(key, value, mutated_json, mutated_inputs):
-
+def mutate_key(key, value, mutated_json, mutated_inputs):
     if isinstance(key, str):
         for mutated_key in mutate_string(key):
             temp_json = mutated_json.copy()
             temp_json[mutated_key] = value
             mutated_inputs.append(json.dumps(temp_json).encode())
-
-    if isinstance(value, str):
-        for mutated_value in mutate_string(value):
-            temp_json = mutated_json.copy()
-            temp_json[key] = mutated_value
-            mutated_inputs.append(json.dumps(temp_json).encode())
-
+            
     if isinstance(key, int):
         for mutated_key in mutate_integer(key):
             temp_json = mutated_json.copy()
             temp_json[str(mutated_key)] = value
+            mutated_inputs.append(json.dumps(temp_json).encode())
+            
+    temp_json = mutated_json.copy()
+    del temp_json[key]
+    mutated_inputs.append(json.dumps(temp_json).encode())
+    
+    temp_json = mutated_json.copy()
+    temp_json[key] = None
+    mutated_inputs.append(json.dumps(temp_json).encode())
+    
+    
+def mutate_value(key, value, mutated_json, mutated_inputs):
+    if isinstance(value, str):
+        for mutated_value in mutate_string(value):
+            temp_json = mutated_json.copy()
+            temp_json[key] = mutated_value
             mutated_inputs.append(json.dumps(temp_json).encode())
 
     if isinstance(value, int):
@@ -92,15 +100,7 @@ def apply_mutations(key, value, mutated_json, mutated_inputs):
                 mutated_list[index] = mutated_element
                 temp_json[key] = mutated_list
                 mutated_inputs.append(json.dumps(temp_json).encode())
-            
-    temp_json = mutated_json.copy()
-    del temp_json[key]
-    mutated_inputs.append(json.dumps(temp_json).encode())
-    
-    temp_json = mutated_json.copy()
-    temp_json[key] = None
-    mutated_inputs.append(json.dumps(temp_json).encode())
-    
+
 
 def mutate(json_input: bytes) -> bytearray:
     json_obj = json.loads(json_input)
@@ -109,7 +109,8 @@ def mutate(json_input: bytes) -> bytearray:
     for key, value in json_obj.items():
         mutated_json = json_obj.copy()
         
-        apply_mutations(key, value, mutated_json, mutated_inputs)
+        mutate_key(key, value, mutated_json, mutated_inputs)
+        mutate_value(key, value, mutated_json, mutated_inputs)
 
     add_key(json_obj, mutated_inputs)
     
