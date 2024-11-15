@@ -57,11 +57,9 @@ def mutate_csv(csv_data):
     ]
 
     mutator = random.choice(mutations)
-    print(mutator)
     mutator(csv_object.data)
     
     # Convert mutated CSVObject back to CSV string format
     fuzzed_data = list_to_csv(csv_object)
-    # print(fuzzed_data)
     return fuzzed_data  # Return the mutated data instead of passing it to the harness
 
