@@ -44,7 +44,7 @@ def mutate_integer(data):
     if isinstance(data, int):
         mutated_integers = []
         # Pass the data to known_integer_insertion, which should return a bytearray
-        mutated_data_list = known_integer_insertion(data.to_bytes(4, 'little'))
+        mutated_data_list = known_integer_insertion(data.to_bytes(4, 'little', signed=True))
         # Convert each mutated byte sequence back to an integer
         for mutated_data in mutated_data_list:
             mutated_integers.append(int.from_bytes(mutated_data, 'little', signed=True))
