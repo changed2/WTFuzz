@@ -54,7 +54,8 @@ if __name__ == "__main__":
 
     for binary in glob.glob("../binaries/*"):
         filename = os.path.basename(binary)
-        if filename != "csv1" and filename != "json1":
+        crash_event.clear()
+        if filename != "json1":
             continue
 
         input_file = f"../example_inputs/{filename}.txt"

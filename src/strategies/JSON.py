@@ -8,15 +8,18 @@ from mutators.bitflip import bit_flip
 from mutators.buffer_overflow import buffer_overflow
 from mutators.byteflip import byte_flip
 from mutators.known_integer import known_integer_insertion
+from io import StringIO
 
 class JSONObject(UserDict):
     def __init__(self, data=None):
         super().__init__(data or {})
 
-def read_json(input_file):
-    with open(input_file, "r") as f:
-        data = json.load(f)
-        return data
+def read_json(input_data):
+    # with open(input_file, "r") as f:
+    #     data = json.load(f)
+    #     return data
+    data = json.loads(input_data)  # Converts the string input_data to JSON
+    return data
 
 def helper_add_key(mutated_json):
     value_options = [
@@ -98,8 +101,8 @@ def add_keys(key, value, mutated_json):
         temp_json[random_key] = random.randint(0, 100)
     return json.dumps(temp_json).encode()
 
-def mutate_json(json_input_file, binary_file, harness):
-    json_object = read_json(json_input_file)
+def mutate_json(json_input_data):
+    json_object = read_json(json_input_data)
     original_json = json_object.copy()
 
     json_mutations = [
@@ -113,6 +116,6 @@ def mutate_json(json_input_file, binary_file, harness):
     mutator = random.choice(json_mutations)
     key, value = random.choice(list(json_object.items()))
     fuzzed_data = mutator(key, value, original_json)
-    print(fuzzed_data)
+    print(mutator)
     return fuzzed_data
             
