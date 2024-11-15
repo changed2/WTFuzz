@@ -1,31 +1,9 @@
 import subprocess
 import os
 import re
-from collections import defaultdict
 import tempfile
 
-################################################################################
-#### Initial Basic implementation of QEMU-based code-coverage ######
-"""
-    Features:
-        1. Runs binary using qemu rather than native subprocess to enable tracing via emulation.
-        2. Generates coverage based on number of basic blocks logged in trace_file
-            a. Needs to account for ASLR as right now every new run will generate new coverage even if the exact
-               same addresses are being hit due to ASLR.
-        3. Added stub for updating 'best input' which we can use to create further mutations of if the payload
-            generates more coverage (coverage-based mutations)
-    
-    Assumptions:
-        1. The binary will be run multiple times until a crash is generated
-        2. Each iteration generates a new input either from scratch or using a previous payload as the base for mutations.
-"""
-################################################################################
-
 class QEMUCoverage:
-    def __init__(self):
-        self.coverage_map = defaultdict(int)
-        self.baseline_coverage = set()
-
     def _parse_trace_log(self, trace_file_location):
         blocks = set()
         try:
@@ -72,7 +50,3 @@ class QEMUCoverage:
             # Remove tracefile after each run to reduce its size.
             if os.path.exists(trace_file_location):
                 os.remove(trace_file_location)
-
-    def set_baseline(self, blocks):
-        """Set baseline coverage for comparison."""
-        self.baseline_coverage = blocks

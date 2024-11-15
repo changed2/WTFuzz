@@ -1,9 +1,19 @@
 from magic import from_file
-import subprocess
 import threading
 from exploit_detection import crash_log
 import os
 from QEMUCoverage import QEMUCoverage
+
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
 class Harness():
     strategy = None
@@ -13,16 +23,16 @@ class Harness():
     def __init__(self, input_file):
         file_type = from_file(input_file)
         if "CSV" in file_type:
-            print("Switching to CSV mutator")
+            print(f"{bcolors.OKGREEN}Switching to CSV mutator{bcolors.ENDC}")
             self.strategy = "CSV"
         elif "JSON" in file_type:
-            print("Switching to JSON mutator")
+            print(f"{bcolors.OKGREEN}Switching to JSON mutator{bcolors.ENDC}")
             self.strategy = "JSON"
         elif "JPEG" in file_type:
-            print("Switching to JPEG mutator")
+            print(f"{bcolors.OKGREEN}Switching to JPEG mutator{bcolors.ENDC}")
             self.strategy = "JPEG"
         else:
-            print("No matching strategy found, defaulting to plaintext")
+            print(f"{bcolors.OKGREEN}No matching strategy found, defaulting to plaintext{bcolors.ENDC}")
             self.strategy = "TEXT"
             
     def run_retrieve(self, binary, input_data):
@@ -44,19 +54,8 @@ class Harness():
                     )
 
         return result
-    
-    """Establish baseline coverage for initial input."""
-    # Donno if this is necessary, but added stub anyway...
-    def establish_baseline(self, binary, input_data):
-        result = self.qemu_coverage.get_coverage(binary, input_data)
-        self.qemu_coverage.set_baseline(result['blocks'])
-        self.best_coverage = len(result['blocks'])
-        self.best_input = input_data
-
-    def get_best_input(self):
-        return self.best_input
 
     @classmethod
+    # Reset the crash logged state when starting with a new binary
     def reset_crash_state(cls):
-        """Reset the crash logged state when starting with a new binary"""
         cls._crash_logged = False
