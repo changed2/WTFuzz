@@ -1,121 +1,147 @@
 import os
 import json
-import random
-import string
-from collections import UserDict
+from collections import UserList, UserDict
 from pwn import *
 from mutators.bitflip import bit_flip
 from mutators.buffer_overflow import buffer_overflow
 from mutators.byteflip import byte_flip
 from mutators.known_integer import known_integer_insertion
-from io import StringIO
 
-class JSONObject(UserDict):
-    def __init__(self, data=None):
-        super().__init__(data or {})
+def format_input(input_file):
+    with open(input_file, "r") as f:
+        sample_input = f.read()
+        return sample_input
 
-def read_json(input_data):
-    # with open(input_file, "r") as f:
-    #     data = json.load(f)
-    #     return data
-    data = json.loads(input_data)  # Converts the string input_data to JSON
-    return data
-
-def helper_add_key(mutated_json):
+def add_key(mutated_json, mutated_inputs):
+    # Define possible types of values to add
     value_options = [
-        None,
-        random.randint(-1000, 1000),
-        ''.join(random.choices(string.ascii_letters, k=10)),
-        [random.randint(0, 5) for _ in range(3)],
-        {"nested_key": "nested_value"}
+        None,                                    
+        random.randint(-1000, 1000),             
+        ''.join(random.choices(string.ascii_letters, k=10)), 
+        [random.randint(0, 5) for _ in range(3)], 
+        {"nested_key": "nested_value"}            
     ]
+
     for value in value_options:
         temp_json = mutated_json.copy()
         random_key = ''.join(random.choices(string.ascii_letters, k=5))
         temp_json[random_key] = value
-        yield json.dumps(temp_json).encode()
+        mutated_inputs.append(json.dumps(temp_json).encode())
 
-def helper_string(data):
-    mutations = [
-        buffer_overflow(data.encode()).decode(errors='ignore'),
-        bit_flip(data.encode()).decode(errors='ignore'),
-        byte_flip(data.encode()).decode(errors='ignore')
-    ]
-    return mutations
+def mutate_string(data):
+    if isinstance(data, str):
+        mutations = [
+            buffer_overflow(data.encode()).decode(errors='ignore'),
+            bit_flip(data.encode()).decode(errors='ignore'),
+            byte_flip(data.encode()).decode(errors='ignore')
+        ]
+        return mutations
+    else:
+        raise ValueError("Expected string data type for mutate_string.")
 
-def helper_integer(data):
-    mutated_integers = []
-    for mutated_data in known_integer_insertion(data.to_bytes(4, 'little')):
-        mutated_integers.append(int.from_bytes(mutated_data, 'little', signed=True))
-    return mutated_integers
 
-def mutate_keys(key, value, mutated_json):
+def mutate_integer(data):
+    if isinstance(data, int):
+        mutated_integers = []
+        for mutated_data in known_integer_insertion(data.to_bytes(4, 'little')):
+            mutated_integers.append(int.from_bytes(mutated_data, 'little', signed=True))
+        return mutated_integers
+    else:
+        raise ValueError("Expected integer data type for mutate_integer.")
+
+
+# mutate individual elements in a list
+def mutate_list_element(element):
+    if isinstance(element, str):
+        return mutate_string(element)
+    elif isinstance(element, int):
+        return mutate_integer(element)
+    return []
+
+
+def apply_mutations(key, value, mutated_json, mutated_inputs):
+
     if isinstance(key, str):
-        for mutated_key in helper_string(key):
+        for mutated_key in mutate_string(key):
             temp_json = mutated_json.copy()
             temp_json[mutated_key] = value
-            return json.dumps(temp_json).encode()
+            mutated_inputs.append(json.dumps(temp_json).encode())
 
-    elif isinstance(key, int):
-        for mutated_key in helper_integer(key):
+    if isinstance(value, str):
+        for mutated_value in mutate_string(value):
+            temp_json = mutated_json.copy()
+            temp_json[key] = mutated_value
+            mutated_inputs.append(json.dumps(temp_json).encode())
+
+    if isinstance(key, int):
+        for mutated_key in mutate_integer(key):
             temp_json = mutated_json.copy()
             temp_json[str(mutated_key)] = value
-            return json.dumps(temp_json).encode()
+            mutated_inputs.append(json.dumps(temp_json).encode())
 
-def mutate_values(key, value, mutated_json):
-    if isinstance(value, str):
-        for mutated_value in helper_string(value):
+    if isinstance(value, int):
+        for mutated_value in mutate_integer(value):
             temp_json = mutated_json.copy()
             temp_json[key] = mutated_value
-            return json.dumps(temp_json).encode()
-
-    elif isinstance(value, int):
-        for mutated_value in helper_integer(value):
-            temp_json = mutated_json.copy()
-            temp_json[key] = mutated_value
-            return json.dumps(temp_json).encode()
-
-    elif isinstance(value, list):
+            mutated_inputs.append(json.dumps(temp_json).encode())
+            
+    if isinstance(value, list):
         for index in range(len(value)):
-            temp_json = mutated_json.copy()
+            mutated_json = json_obj.copy()
             mutated_list = value.copy()
-            for mutated_element in helper_list_element(value[index]):
+                
+            # apply mutations to the list element at the current index
+            for mutated_element in mutate_list_element(value[index]):
                 mutated_list[index] = mutated_element
-                temp_json[key] = mutated_list
-                return json.dumps(temp_json).encode()
-
-def remove_key(key, value, mutated_json):
+                mutated_json[key] = mutated_list
+                mutated_inputs.append(json.dumps(mutated_json).encode())
+            
     temp_json = mutated_json.copy()
     del temp_json[key]
-    return json.dumps(temp_json).encode()
-
-def null_key(key, value, mutated_json):
+    mutated_inputs.append(json.dumps(temp_json).encode())
+    
     temp_json = mutated_json.copy()
     temp_json[key] = None
-    return json.dumps(temp_json).encode()
+    mutated_inputs.append(json.dumps(temp_json).encode())
+    
 
-def add_keys(key, value, mutated_json):
+def mutate(json_input: bytes) -> bytearray:
+    json_obj = json.loads(json_input)
+    mutated_inputs = [b'{}']
+
+    for key, value in json_obj.items():
+        mutated_json = json_obj.copy()
+        
+        apply_mutations(key, value, mutated_json, mutated_inputs)
+
+    add_key(json_obj, mutated_inputs)
+    
     temp_json = mutated_json.copy()
     for _ in range(250):
         random_key = ''.join(random.choices(string.ascii_letters, k=5))
         temp_json[random_key] = random.randint(0, 100)
-    return json.dumps(temp_json).encode()
+    mutated_inputs.append(json.dumps(temp_json).encode())
 
-def mutate_json(json_input_data):
-    json_object = read_json(json_input_data)
-    original_json = json_object.copy()
+    return mutated_inputs
 
-    json_mutations = [
-        mutate_keys,
-        mutate_values,
-        remove_key,
-        null_key,
-        add_keys
-    ]
-    
-    mutator = random.choice(json_mutations)
-    key, value = random.choice(list(json_object.items()))
-    fuzzed_data = mutator(key, value, original_json)
-    print(mutator)
-    return fuzzed_data
-            
+def print_mutated_inputs(mutated_inputs):
+    for i, mutation in enumerate(mutated_inputs):
+        # Decode the mutation (it's in byte format) and limit to 25 characters
+        print(f"Mutation {i+1}: {mutation.decode()[:200]}")
+
+def mutate_json(input_data):
+    # sample_json = format_input(json_input_file)
+    if isinstance(input_data, str):
+        input_data = input_data.encode()  # Convert string to bytes if necessary
+
+    json_obj = json.loads(input_data)
+    mutated_input = mutate(input_data)
+
+    #print_mutated_inputs(mutated_input)
+    if mutated_input:  # Check if the list is not empty
+        selected_input = random.choice(mutated_input)
+        selected_index = mutated_input.index(selected_input)
+        print(f"Selected index: {selected_index}, Value: {selected_input.decode()}")
+        return selected_input  # Return the selected input
+    else:
+        return None  # Return None if mutated_input is empty
