@@ -32,10 +32,10 @@ def add_key(mutated_json, mutated_inputs):
 
 def mutate_string(data):
     mutations = [
-        buffer_overflow(data.encode()).decode(errors='ignore'),
+        buffer_overflow().decode(errors='ignore'),
         bit_flip(data.encode()).decode(errors='ignore'),
         byte_flip(data.encode()).decode(errors='ignore'),
-        format_string_attack(data.encode()).decode(errors='ignore')
+        format_string_attack().decode(errors='ignore')
     ]
     return mutations
 

@@ -21,7 +21,7 @@ class Harness():
             print("Switching to XML mutator")
             self.strategy = "XML"
         elif "HTML document, ASCII text" == file_type:
-            print("Switching to XML mutator")
+            print("Switching to XMLL mutator")
             self.strategy = "XML"
         else:
             print("No matching strategy found, defaulting to plaintext")
@@ -34,5 +34,6 @@ class Harness():
         if errors:
             filename = os.path.basename(binary)
             crash_log(process.returncode, errors.decode().strip(), input, output.decode().strip(), filename)
+            print(errors.decode().strip())
             return True  # Indicate a crash occurred
         return False  # No crash detected

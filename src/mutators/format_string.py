@@ -1,6 +1,6 @@
 import random
 
-def format_string_attack(data) -> bytearray:
+def format_string_attack() -> bytearray:
     format_strings = [b'%s', b'%x', b'%n', b'%d', b'%p']
     result = b""
     while len(result) < 15:

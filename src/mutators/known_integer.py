@@ -38,3 +38,7 @@ def known_integer_insertion(data) -> Iterator[bytearray]:
         
         mutated_data[position:position + byte_length] = int_bytes
         yield mutated_data
+
+def known_integer_text() -> Iterator[bytearray]:
+    for i in KNOWN_INTS:
+        yield f"{i}".encode()
