@@ -4,8 +4,8 @@ import sys
 KNOWN_INTS = [
     0,
     -1,
-    sys.maxsize,
-    -sys.maxsize,
+    sys.maxsize if sys.maxsize <= 2147483647 else 2147483647,
+    -sys.maxsize if sys.maxsize <= 2147483647 else -2147483647,
     # Probably need more
 ]
 
