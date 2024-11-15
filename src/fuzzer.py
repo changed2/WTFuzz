@@ -10,6 +10,7 @@ from strategies.JPEG import *
 import os 
 import glob
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import traceback
 
 crash_event = threading.Event()
 
@@ -39,6 +40,7 @@ def fuzz_worker(strategy_func, binary, harness, current_input_data):
         }
     except Exception as e:
         print(f"Exception in Thread {threading.current_thread().name}: {e}")
+        traceback.print_exc()
         return {
             'coverage': 0,
             'mutated_input_data': current_input_data,
@@ -55,7 +57,7 @@ if __name__ == "__main__":
     for binary in glob.glob("../binaries/*"):
         filename = os.path.basename(binary)
         crash_event.clear()
-        if filename != "json1":
+        if filename != "json1" and filename != "json2" and filename != "csv1" and filename != "csv2":
             continue
 
         input_file = f"../example_inputs/{filename}.txt"
