@@ -38,8 +38,13 @@ class Harness():
     def run_retrieve(self, binary, input_data):
         qemu_coverage = QEMUCoverage()
         result = qemu_coverage.get_coverage(binary, input_data)
+        format_string_indicators = [
+        '0x',                    # Memory addresses
+        '(nil)',                 # Null pointers printed by %p
+        'stack trace'           # Often printed when %s accesses invalid address
+        ]
 
-        if result['errors']:
+        if result['errors'] or (result['output'] and any(indicator in result['output'].decode(errors='ignore') for indicator in format_string_indicators)):
             # Use the lock to check and set crash logged status
             with self._crash_lock:
                 if not self._crash_logged:
