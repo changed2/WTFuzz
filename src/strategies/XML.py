@@ -36,10 +36,6 @@ There is also a case for repeated tags since that is known to cause programs to 
 '''
 
 
-def format_input(input_file):
-    with open(input_file, "r") as f:
-        return f.read()
-
 def text_mutate(root, mutated_inputs):
 
     elements_with_text = [elem for elem in root.iter() if elem.text is not None]
