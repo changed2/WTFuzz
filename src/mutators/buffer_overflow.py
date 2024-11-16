@@ -1,2 +1,2 @@
-def buffer_overflow(data) -> bytearray:
+def buffer_overflow() -> bytearray:
     return b'A' * 100000
