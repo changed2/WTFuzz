@@ -5,12 +5,33 @@ from pwn import *
 from mutators.bitflip import bit_flip
 from mutators.buffer_overflow import buffer_overflow
 from mutators.byteflip import byte_flip
-from mutators.known_integer import known_integer_insertion
+from mutators.known_integer import known_integer_insert
+from mutators.format_string import format_string_attack
+
+'''
+A JSON format is comprised of keys and values in a 'dictionary' format
+
+e.g. {
+    "key": "value"
+}
+
+The key must be a string (can be numerical string), but the values can be integer, string, list, nested json etc.
+
+The idea is the iterate through each key, value pair and apply mutations such that it may cause some memory vulnerability
+
+The mutate function iterates through each key, value pair, then mutate_key and mutate_value is called
+
+Each mutation adds itself to the mutated_inputs array as a separate mutation
+
+There are also add key, remove key, null key cases to see if they would cause crashes. 
+
+'''
 
 def format_input(input_file):
     with open(input_file, "r") as f:
         sample_input = f.read()
         return sample_input
+    
 
 def add_key(mutated_json, mutated_inputs):
     # Define possible types of values to add
@@ -29,29 +50,21 @@ def add_key(mutated_json, mutated_inputs):
         mutated_inputs.append(json.dumps(temp_json).encode())
 
 def mutate_string(data):
-    if isinstance(data, str):
-        mutations = [
-            buffer_overflow(data.encode()).decode(errors='ignore'),
-            bit_flip(data.encode()).decode(errors='ignore'),
-            byte_flip(data.encode()).decode(errors='ignore')
-        ]
-        return mutations
-    else:
-        raise ValueError("Expected string data type for mutate_string.")
-
+    mutations = [
+        buffer_overflow().decode(errors='ignore'),
+        bit_flip(data.encode()).decode(errors='ignore'),
+        byte_flip(data.encode()).decode(errors='ignore'),
+        format_string_attack().decode(errors='ignore')
+    ]
+    return mutations
 
 def mutate_integer(data):
-    if isinstance(data, int):
-        mutated_integers = []
-        # Pass the data to known_integer_insertion, which should return a bytearray
-        mutated_data_list = known_integer_insertion(data.to_bytes(4, 'little', signed=True))
-        # Convert each mutated byte sequence back to an integer
-        for mutated_data in mutated_data_list:
-            mutated_integers.append(int.from_bytes(mutated_data, 'little', signed=True))
-        return mutated_integers
-    else:
-        raise ValueError("Expected integer data type for mutate_integer.")
-
+    mutated_integers = []
+    # Iterate over each mutated bytearray from known_integer_insertion
+    for mutated_data in known_integer_insert():
+        # Convert the mutated bytearray back to an integer and add to the list
+        mutated_integers.append(int.from_bytes(mutated_data, 'little', signed=True))
+    return mutated_integers
 
 # mutate individual elements in a list
 def mutate_list_element(element):
@@ -61,25 +74,33 @@ def mutate_list_element(element):
         return mutate_integer(element)
     return []
 
-
-def apply_mutations(key, value, mutated_json, mutated_inputs):
-
+def mutate_key(key, value, mutated_json, mutated_inputs):
     if isinstance(key, str):
         for mutated_key in mutate_string(key):
             temp_json = mutated_json.copy()
             temp_json[mutated_key] = value
             mutated_inputs.append(json.dumps(temp_json).encode())
-
-    if isinstance(value, str):
-        for mutated_value in mutate_string(value):
-            temp_json = mutated_json.copy()
-            temp_json[key] = mutated_value
-            mutated_inputs.append(json.dumps(temp_json).encode())
-
+            
     if isinstance(key, int):
         for mutated_key in mutate_integer(key):
             temp_json = mutated_json.copy()
             temp_json[str(mutated_key)] = value
+            mutated_inputs.append(json.dumps(temp_json).encode())
+            
+    temp_json = mutated_json.copy()
+    del temp_json[key]
+    mutated_inputs.append(json.dumps(temp_json).encode())
+    
+    temp_json = mutated_json.copy()
+    temp_json[key] = None
+    mutated_inputs.append(json.dumps(temp_json).encode())
+    
+    
+def mutate_value(key, value, mutated_json, mutated_inputs):
+    if isinstance(value, str):
+        for mutated_value in mutate_string(value):
+            temp_json = mutated_json.copy()
+            temp_json[key] = mutated_value
             mutated_inputs.append(json.dumps(temp_json).encode())
 
     if isinstance(value, int):
@@ -90,23 +111,15 @@ def apply_mutations(key, value, mutated_json, mutated_inputs):
             
     if isinstance(value, list):
         for index in range(len(value)):
-            mutated_json_val = mutated_json.copy()
+            temp_json = mutated_json.copy()
             mutated_list = value.copy()
                 
             # apply mutations to the list element at the current index
             for mutated_element in mutate_list_element(value[index]):
                 mutated_list[index] = mutated_element
-                mutated_json_val[key] = mutated_list
-                mutated_inputs.append(json.dumps(mutated_json_val).encode())
-            
-    temp_json = mutated_json.copy()
-    del temp_json[key]
-    mutated_inputs.append(json.dumps(temp_json).encode())
-    
-    temp_json = mutated_json.copy()
-    temp_json[key] = None
-    mutated_inputs.append(json.dumps(temp_json).encode())
-    
+                temp_json[key] = mutated_list
+                mutated_inputs.append(json.dumps(temp_json).encode())
+
 
 def mutate(json_input: bytes) -> bytearray:
     json_obj = json.loads(json_input)
@@ -115,7 +128,8 @@ def mutate(json_input: bytes) -> bytearray:
     for key, value in json_obj.items():
         mutated_json = json_obj.copy()
         
-        apply_mutations(key, value, mutated_json, mutated_inputs)
+        mutate_key(key, value, mutated_json, mutated_inputs)
+        mutate_value(key, value, mutated_json, mutated_inputs)
 
     add_key(json_obj, mutated_inputs)
     
@@ -132,13 +146,9 @@ def print_mutated_inputs(mutated_inputs):
         # Decode the mutation (it's in byte format) and limit to 25 characters
         print(f"Mutation {i+1}: {mutation.decode()[:200]}")
 
-def mutate_json(input_data):
-    # sample_json = format_input(json_input_file)
-    if isinstance(input_data, str):
-        input_data = input_data.encode()  # Convert string to bytes if necessary
-
-    json_obj = json.loads(input_data)
-    mutated_input = mutate(input_data)
+def mutate_json(json_input_file, binary_file, harness):
+    sample_json = format_input(json_input_file)
+    mutated_input = mutate(sample_json)
 
     #print_mutated_inputs(mutated_input)
     if mutated_input:  # Check if the list is not empty
