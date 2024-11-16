@@ -1,1 +1,1 @@
-{"len": -1, "more_data": ["a", "bb"], "mVcKe": null, "FqVuf": {"nested_key": "nested_value"}, "mVcKg": {"nested_key": "nested_value"}}
+{"len": -2147483647, "input": "AAABBBBCCCC", "more_data": ["a", "bb"], "tHlDP": [5, 3, 0]}

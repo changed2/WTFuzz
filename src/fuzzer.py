@@ -30,6 +30,10 @@ def fuzz_worker(strategy_func, binary, harness, current_input_data):
             return
 
         mutated_input_data = strategy_func(current_input_data)
+
+        if isinstance(mutated_input_data, (bytes, bytearray)):
+            mutated_input_data = base64.b64encode(mutated_input_data).decode('utf-8')
+
         result = harness.run_retrieve(binary, mutated_input_data)
         coverage = len(result['blocks'])
 
@@ -47,6 +51,14 @@ def fuzz_worker(strategy_func, binary, harness, current_input_data):
             'crash_detected': False
         }
 
+def read_input_file(input_file, strategy):
+    if strategy == 'JPEG':
+        with open(input_file, 'rb') as f:
+            return f.read()
+    else:
+        with open(input_file, 'r', encoding='utf-8') as f:
+            return f.read()
+
 if __name__ == "__main__":
     thread_timeout = 8  # Timeout in seconds for resetting to the original payload
     binary_timeout = 60
@@ -56,18 +68,15 @@ if __name__ == "__main__":
         exit(1)
     if not os.path.isdir("../example_inputs"):
         print("Unable to find example_inputs directory")
+        exit(1)
 
     print(banner)
 
     for binary in glob.glob("../binaries/*"):
         filename = os.path.basename(binary)
         crash_event.clear()
-        if filename != "json1" and filename != "json2" and filename != "csv1" and filename != "csv2":
-            continue
 
         input_file = f"../example_inputs/{filename}.txt"
-        with open(input_file, 'r') as f:
-            input_data = f.read()
 
         Harness.reset_crash_state()
         harness = Harness(input_file)
@@ -81,7 +90,13 @@ if __name__ == "__main__":
 
         strategy_func = strategy_functions.get(strategy)
         if strategy_func is None:
-            print(f"Unknown strategy: {strategy}")
+            print(f"Unknown strategy: {strategy}\n")
+            continue
+
+        try:
+            input_data = read_input_file(input_file, strategy)
+        except Exception as e:
+            print(f"Failed to read input file for {strategy}: {e}\n")
             continue
 
         best_input_data = input_data
