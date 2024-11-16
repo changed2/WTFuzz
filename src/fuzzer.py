@@ -7,6 +7,7 @@ from exploit_detection import crash_log
 from strategies.CSV import *
 from strategies.JSON import *
 from strategies.JPEG import *
+from strategies.XML import *
 import os 
 import glob
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -36,6 +37,8 @@ def fuzz_worker(strategy_func, binary, harness, current_input_data):
 
         result = harness.run_retrieve(binary, mutated_input_data)
         coverage = len(result['blocks'])
+        
+        # print(f"{threading.current_thread().name} - Coverage: {coverage} blocks")
 
         return {
             'coverage': coverage,
@@ -56,7 +59,7 @@ def read_input_file(input_file, strategy):
         with open(input_file, 'rb') as f:
             return f.read()
     else:
-        with open(input_file, 'r', encoding='utf-8') as f:
+        with open(input_file, 'r') as f:
             return f.read()
 
 if __name__ == "__main__":
@@ -77,6 +80,9 @@ if __name__ == "__main__":
         crash_event.clear()
 
         input_file = f"../example_inputs/{filename}.txt"
+        
+        # if not filename.startswith("xml"):
+        #     continue
 
         Harness.reset_crash_state()
         harness = Harness(input_file)
@@ -85,7 +91,8 @@ if __name__ == "__main__":
         strategy_functions = {
             'CSV': mutate_csv,
             'JSON': mutate_json,
-            'JPEG': mutate_jpeg
+            'JPEG': mutate_jpeg,
+            'XML': mutate_xml
         }
 
         strategy_func = strategy_functions.get(strategy)

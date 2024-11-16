@@ -16,8 +16,6 @@ KNOWN_INTS = [
     65535, 
     2147483647,
     -2147483648,
-    *((2**i) for i in range(1, 32)),
-    *((2**i - 1) for i in range(1, 32))
 ]
 
 # Insert known integer values at random positions.

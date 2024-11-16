@@ -122,11 +122,6 @@ def tag_mutate(root, mutated_inputs):
         mutated_xml = ET.tostring(root, encoding="unicode")
         mutated_inputs.append(mutated_xml)
         
-        for known in known_integer_insert():
-            elem.tag = known.decode()
-            mutated_xml = ET.tostring(root, encoding="unicode")
-            mutated_inputs.append(mutated_xml)
-        
         elem.tag = (b"B" * 200).decode()
         mutated_xml = ET.tostring(root, encoding="unicode")
         mutated_inputs.append(mutated_xml)
@@ -148,17 +143,20 @@ def tag_mutate(root, mutated_inputs):
     return mutated_inputs
 
 def mutate_xml(input_data):
-    root = ET.fromstring(input_data)
+    try:
+        root = ET.fromstring(input_data)
+    except ET.ParseError as e:
+        return input_data
     
     mutated_inputs = []
     mutated_inputs.extend(tag_mutate(root, mutated_inputs))
     mutated_inputs.extend(attr_mutate(root, mutated_inputs))
     mutated_inputs.extend(text_mutate(root, mutated_inputs))
 
-    if mutated_input:  # Check if the list is not empty
-        selected_input = random.choice(mutated_input)
-        selected_index = mutated_input.index(selected_input)
+    if mutated_inputs:  # Check if the list is not empty
+        selected_input = random.choice(mutated_inputs)
+        selected_index = mutated_inputs.index(selected_input)
         # print(f"Selected index: {selected_index}")
-        return selected_input.decode()  # Return the selected input
+        return selected_input  # Return the selected input
     else:
         return None  # Return None if mutated_input is empty

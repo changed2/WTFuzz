@@ -31,6 +31,9 @@ class Harness():
         elif "JPEG" in file_type:
             print(f"{bcolors.OKGREEN}Switching to JPEG mutator{bcolors.ENDC}")
             self.strategy = "JPEG"
+        elif "XML" in file_type or "HTML" in file_type:
+            print(f"{bcolors.OKGREEN}Switching to XML mutator{bcolors.ENDC}")
+            self.strategy = "XML"
         else:
             print(f"{bcolors.OKGREEN}No matching strategy found, defaulting to plaintext{bcolors.ENDC}")
             self.strategy = "TEXT"
