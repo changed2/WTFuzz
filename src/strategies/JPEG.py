@@ -1,4 +1,4 @@
-# #!/usr/bin/env python3
+#!/usr/bin/env python3
 
 # https://dev.exiv2.org/projects/exiv2/wiki/The_Metadata_in_JPEG_files
 # https://docs.fileformat.com/image/jpeg/
@@ -108,8 +108,12 @@ def insert_zero_length_segments(data):
 
 
 
-def mutate_jpeg(input_file, binary, harness):
-    jpeg_data = JPEGObject(read_jpeg(input_file))
+def mutate_jpeg(input_data):
+    if isinstance(input_data, str):
+        input_data = input_data.encode('utf-8')  # Encode to bytes
+
+    jpeg_data = JPEGObject(bytearray(input_data))  # Create JPEGObject
+
     mutations = [
         extend_sof,
         corrupt_dqt,
@@ -120,9 +124,8 @@ def mutate_jpeg(input_file, binary, harness):
         insert_zero_length_segments
     ]
 
-    for mutation in mutations:
-        mutated_data = jpeg_data.mutate(mutation)
-        base64_encoded_data = base64.b64encode(mutated_data).decode('utf-8')
-        harness.run_retrieve(binary, base64_encoded_data)
-        jpeg_data.data = read_jpeg(input_file)
+    mutation = random.choice(mutations)
+    mutated_data = jpeg_data.mutate(mutation)
+
+    return mutated_data  # Return as bytearray
 
