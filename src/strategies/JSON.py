@@ -5,7 +5,7 @@ from pwn import *
 from mutators.bitflip import bit_flip
 from mutators.buffer_overflow import buffer_overflow
 from mutators.byteflip import byte_flip
-from mutators.known_integer import known_integer_insertion
+from mutators.known_integer import known_integer_insert
 from mutators.format_string import format_string_attack
 
 def format_input(input_file):
@@ -42,7 +42,7 @@ def mutate_string(data):
 def mutate_integer(data):
     mutated_integers = []
     # Iterate over each mutated bytearray from known_integer_insertion
-    for mutated_data in known_integer_insertion(data.to_bytes(4, 'little')):
+    for mutated_data in known_integer_insert():
         # Convert the mutated bytearray back to an integer and add to the list
         mutated_integers.append(int.from_bytes(mutated_data, 'little', signed=True))
     return mutated_integers

@@ -21,7 +21,7 @@ KNOWN_INTS = [
 ]
 
 # Insert known integer values at random positions.
-def known_integer_insertion(data) -> Iterator[bytearray]:
+def known_integer_random(data) -> Iterator[bytearray]:
     data = bytearray(data)
     
     for known_int in KNOWN_INTS:
@@ -39,6 +39,5 @@ def known_integer_insertion(data) -> Iterator[bytearray]:
         mutated_data[position:position + byte_length] = int_bytes
         yield mutated_data
 
-def known_integer_text() -> Iterator[bytearray]:
-    for i in KNOWN_INTS:
-        yield f"{i}".encode()
+def known_integer_insert() -> Iterator[bytearray]:
+    return (str(i).encode() for i in KNOWN_INTS)
