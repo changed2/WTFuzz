@@ -5,9 +5,19 @@ from typing import Iterator
 KNOWN_INTS = [
     0,
     -1,
-    sys.maxsize if sys.maxsize <= 2147483647 else 2147483647,
-    -sys.maxsize if sys.maxsize <= 2147483647 else -2147483647,
+    sys.maxsize,
+    -sys.maxsize,
     # Probably need more
+    127,
+    -128,
+    255,
+    32767,
+    -32768,
+    65535, 
+    2147483647,
+    -2147483648,
+    *((2**i) for i in range(1, 32)),
+    *((2**i - 1) for i in range(1, 32))
 ]
 
 # Insert known integer values at random positions.
