@@ -111,9 +111,9 @@ def insert_zero_length_segments(data):
 def mutate_jpeg(input_file, binary, harness):
     jpeg_data = JPEGObject(read_jpeg(input_file))
     mutations = [
-        extend_sof, 
-        corrupt_dqt, 
-        shuffle_segments, 
+        extend_sof,
+        corrupt_dqt,
+        shuffle_segments,
         corrupt_huffman_tables,
         corrupt_soi_eoi,
         remove_random_segment,
@@ -125,3 +125,4 @@ def mutate_jpeg(input_file, binary, harness):
         base64_encoded_data = base64.b64encode(mutated_data).decode('utf-8')
         harness.run_retrieve(binary, base64_encoded_data)
         jpeg_data.data = read_jpeg(input_file)
+
