@@ -84,6 +84,7 @@ def corrupt_soi_eoi(data):
     eoi_index = data.rfind(b'\xFF\xD9')
     if eoi_index != -1:
         data[eoi_index:eoi_index+2] = b'\xFF\xD8'
+
 #6: remove data to have terminated data stream
 def remove_random_segment(data):
     segments = [b'\xFF\xE0', b'\xFF\xE1', b'\xFF\xDA']  # APP0, APP1, SOS
@@ -106,8 +107,18 @@ def insert_zero_length_segments(data):
             # Modify the bytearray directly using slicing
             data[index:index] = zero_length_marker
 
+'''
+JPEG files consist of segments marked by FF bytes (SOI, DQT, SOF, DHT, SOS, EOI etc)
+Each segment has: Marker (2 bytes) + Length (2 bytes) + Payload
 
+Mutations target segment structure through:
+- Invalid segment lengths/data
+- Corrupted tables (DQT/DHT)  
+- Shuffled segment order
+- Removed/truncated segments
 
+To find potential vulnerabilities in JPEG parsers and decoders
+'''
 def mutate_jpeg(input_data):
     if isinstance(input_data, str):
         input_data = input_data.encode('utf-8')  # Encode to bytes
