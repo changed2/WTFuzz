@@ -1,5 +1,6 @@
 import random
 import sys
+from typing import Iterator
 
 KNOWN_INTS = [
     0,
@@ -25,3 +26,6 @@ def known_integer_insertion(data) -> bytearray:
     
     mutated_data_list.append(mutated_data)  # Add the mutated byte array to the list
     return mutated_data_list
+
+def known_integer_insert() -> Iterator[bytearray]:
+    return (str(i).encode() for i in KNOWN_INTS)

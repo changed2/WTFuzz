@@ -27,12 +27,6 @@ There are also add key, remove key, null key cases to see if they would cause cr
 
 '''
 
-def format_input(input_file):
-    with open(input_file, "r") as f:
-        sample_input = f.read()
-        return sample_input
-    
-
 def add_key(mutated_json, mutated_inputs):
     # Define possible types of values to add
     value_options = [
@@ -146,9 +140,12 @@ def print_mutated_inputs(mutated_inputs):
         # Decode the mutation (it's in byte format) and limit to 25 characters
         print(f"Mutation {i+1}: {mutation.decode()[:200]}")
 
-def mutate_json(json_input_file, binary_file, harness):
-    sample_json = format_input(json_input_file)
-    mutated_input = mutate(sample_json)
+def mutate_json(input_data):
+    if isinstance(input_data, str):
+        input_data = input_data.encode()  # Convert string to bytes if necessary
+
+    json_obj = json.loads(input_data)
+    mutated_input = mutate(input_data)
 
     #print_mutated_inputs(mutated_input)
     if mutated_input:  # Check if the list is not empty
