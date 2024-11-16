@@ -147,17 +147,18 @@ def tag_mutate(root, mutated_inputs):
         
     return mutated_inputs
 
-def mutate_xml(xml_input_file, binary_file, harness):
-    sample_xml = format_input(xml_input_file)
-    root = ET.fromstring(sample_xml)
+def mutate_xml(input_data):
+    root = ET.fromstring(input_data)
     
     mutated_inputs = []
     mutated_inputs.extend(tag_mutate(root, mutated_inputs))
     mutated_inputs.extend(attr_mutate(root, mutated_inputs))
     mutated_inputs.extend(text_mutate(root, mutated_inputs))
 
-    # Run each mutated input through the harness
-    for mutated_input in mutated_inputs:
-        res = harness.run_retrieve(binary_file, mutated_input)
-        if res:
-            continue
+    if mutated_input:  # Check if the list is not empty
+        selected_input = random.choice(mutated_input)
+        selected_index = mutated_input.index(selected_input)
+        # print(f"Selected index: {selected_index}")
+        return selected_input.decode()  # Return the selected input
+    else:
+        return None  # Return None if mutated_input is empty
